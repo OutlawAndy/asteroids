@@ -323,7 +323,7 @@ function _animatic_springer(p, min, scale)
         this.radius = Math.random();
         this.color = "#eafbff";
         this.paint = function(ctx) {
-		      this.y += this.radius*2;
+		      this.y += this.radius*5;
 		      if(this.y > canvas.height) { this.y = 0; }
 	        ctx.beginPath();
 	        ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
