@@ -296,11 +296,12 @@ function _animatic_springer(p, min, scale)
 		var canvas;
 		var spaceship;
 		var asteroidTotal = asteroidQuery();
+    var starsInTheSky = 200;
 		var roid;
 		var asteroids = [];
 		var photons = [];
 		var explosions = [];
-		var particles = [];
+    var stars = [];
 		var tPad;
 		var startTime;
 		var endTime = 'not set';
@@ -316,26 +317,21 @@ function _animatic_springer(p, min, scale)
 				return roidCount;
 			}
 	// <!--------------------------------------------  Space/Stars  -->
-			function createParticles() {
-				  if(particles.length < 100) {
-				      particles.push({
-				              x: Math.random()*canvas.width,
-				              y: 0,
-				              speed: 2+Math.random()*3,
-				              radius: 1+Math.random()*2,
-				              color: "#e6e0c9",
-				      });
-				  }
-			}
-			function updateParticles() {
-			    for(var i in particles) {
-			        var part = particles[i];
-			        part.y += part.speed;
-							if(part.y > canvas.height) {
-								part.y = 0;
-							}
-			    }
-			}
+			function Star() {
+        this.x = Math.random()*canvas.width;
+        this.y = Math.random()*canvas.height;
+        this.radius = Math.random();
+        this.color = "#eafbff";
+        this.paint = function(ctx) {
+		      this.y += this.radius*2;
+		      if(this.y > canvas.height) { this.y = 0; }
+	        ctx.beginPath();
+	        ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
+	        ctx.closePath();
+	        ctx.fillStyle = this.color;
+	        ctx.fill();
+        }
+      }
 	// <!--------------------------------------------  Explosion Class  -->
 			function Explosion(x,y,min,max,duration) {
 				this.x = x;
@@ -523,15 +519,8 @@ function _animatic_springer(p, min, scale)
 			var ctx = canvas.getContext('2d');
 			ctx.fillStyle = "rgba(0,0,0,0.8)";
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
-	    for(var i in particles) {
-	        var part = particles[i];
-	        ctx.beginPath();
-	        ctx.arc(part.x,part.y, part.radius, 0, Math.PI*2);
-	        ctx.closePath();
-	        ctx.fillStyle = part.color;
-	        ctx.fill();
-	    }
-			ctx.save();
+      ctx.save();
+      paintAll(ctx,stars);
 			if (asteroids.length == 0) {
 				gameOver(ctx);
 			} else {
@@ -552,8 +541,6 @@ function _animatic_springer(p, min, scale)
 		}
 		function repaintLoop() {
 			refresh();
-	    createParticles();
-	    updateParticles();
 			setTimeout("repaintLoop()",50);
 		}
 
@@ -567,8 +554,10 @@ function _animatic_springer(p, min, scale)
 			for (var i=0; i<asteroidTotal; i++) {
 				asteroids[i]  = new Asteroid();
 			}
+      for (var i=0; i<starsInTheSky; i++){
+        stars[i] = new Star();
+      }
 			repaintLoop();
-
 		}
 
 		window.addEventListener('load',init,true);
