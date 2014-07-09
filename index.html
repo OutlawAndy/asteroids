@@ -1,568 +1,499 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale = 1, user-scalable = no" media="screen" />
-	<meta name="apple-mobile-web-app-status-bar-style" content="black">
-	<title>astroids</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale = 1, user-scalable = no" media="screen" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>astroids</title>
+  <style>body{margin:0 !important;}</style>
 </head>
 <body>
-<img id="roid" src="http://upload.wikimedia.org/wikipedia/commons/5/56/Asteroid_icon.jpg" style="width:20px; height:20px; display:none">
-<canvas id="game" width="1200" height="600">
-	Sorry, Your Browser does not support the Canvas Element
-</canvas>
-<script>
-/**
- * Copyright (c) 2010 David Griffiths, http://code.google.com/p/animatic/
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+  <img id="roid0" src="http://s3.amazonaws.com/roids/images/roid1.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid1" src="http://s3.amazonaws.com/roids/images/roid2.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid2" src="http://s3.amazonaws.com/roids/images/roid3.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid3" src="http://s3.amazonaws.com/roids/images/roid4.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid4" src="http://s3.amazonaws.com/roids/images/roid5.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid5" src="http://s3.amazonaws.com/roids/images/roid6.jpg" style="width:20px; height:20px; display:none" />
+  <img id="spaceship" src="http://s3.amazonaws.com/roids/images/spaceship.png" style="width:50px; height:40px; display:none" />
+  <canvas id="game">
+    Sorry, Your Browser does not support the Canvas Element
+  </canvas>
+  <script>
+    /**
+     * Copyright (c) 2010 David Griffiths, http://code.google.com/p/animatic/
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining
+     * a copy of this software and associated documentation files (the
+     * "Software"), to deal in the Software without restriction, including
+     * without limitation the rights to use, copy, modify, merge, publish,
+     * distribute, sublicense, and/or sell copies of the Software, and to
+     * permit persons to whom the Software is furnished to do so, subject to
+     * the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be
+     * included in all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+     * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+     * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+     * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+     */
 
-var _animatic_Objects = [];
-var _animatic_Attributes = [];
+    var _animatic_Objects = [];
+    var _animatic_Attributes = [];
 
-//
-// These are the major functions.
-//
+    //
+    // These are the major functions.
+    //
 
-function stopAllAnimation()
-{
-    _animatic_Objects = [];
-    _animatic_Attributes = [];
-}
+    function stopAllAnimation(){
+      _animatic_Objects = [];
+      _animatic_Attributes = [];
+    }
 
-function _animatic_Sequencer()
-{
-}
+    function _animatic_Sequencer() {}
 
-function animate(obj, attrName, targetValue, howManySecs)
-{
-    var t = howManySecs || 0.25;
-    var seq = new _animatic_Sequencer();
-    if (obj[attrName] instanceof Array) {
+    function animate(obj, attrName, targetValue, howManySecs) {
+      var t = howManySecs || 0.25;
+      var seq = new _animatic_Sequencer();
+      if (obj[attrName] instanceof Array) {
         for (var i = 0; i < obj[attrName].length; i++) {
-            var itemObject = new Object();
-            itemObject["_object"] = obj;
-            itemObject["_attr"] = "" + attrName;
-            itemObject["_item_" + i] = obj[attrName][i];
-            animatorFn = _animatic_runner(t, obj[attrName][i], targetValue[i], obj, attrName, seq);
-            _animatic_animateWithAnimator(itemObject, "_item_" + i, animatorFn);
+          var itemObject = new Object();
+          itemObject["_object"] = obj;
+          itemObject["_attr"] = "" + attrName;
+          itemObject["_item_" + i] = obj[attrName][i];
+          animatorFn = _animatic_runner(t, obj[attrName][i], targetValue[i], obj, attrName, seq);
+          _animatic_animateWithAnimator(itemObject, "_item_" + i, animatorFn);
         }
-    } else {
+      } else {
         animatorFn = _animatic_runner(t, obj[attrName], targetValue, obj, attrName, seq);
         _animatic_animateWithAnimator(obj, attrName, animatorFn);
+      }
+      return seq;
     }
-    return seq;
-}
 
-function rotate(obj, attrName, rpm)
-{
-    animatorFn = _animatic_rotator(60.0 / rpm);
-    _animatic_animateWithAnimator(obj, attrName, animatorFn);
-}
-function drift(obj, heading, speedValue, wrapValue, maxXValue, maxYValue)
-{
-    if (speedValue == 0) {
-    	return;
+    function rotate(obj, attrName, rpm) {
+      animatorFn = _animatic_rotator(60.0 / rpm);
+      _animatic_animateWithAnimator(obj, attrName, animatorFn);
     }
-    var speed = speedValue || 100;
-    var maxX = maxXValue || window.innerWidth;
-    var maxY = maxYValue || window.innerHeight;
-    var wrap = wrapValue;
-    if (wrap == null) {
-        wrap = true;
+    function drift(obj, heading, speedValue, wrapValue, maxXValue, maxYValue) {
+      var speed = speedValue || 100;
+      var maxX = maxXValue || window.innerWidth;
+      var maxY = maxYValue || window.innerHeight;
+      var wrap = wrapValue;
+      var attrNameY = "y";
+      var attrNameX = "x";
+      if (speedValue == 0) { return; }
+      if (wrap == null) { wrap = true; }
+      if (obj.top) { attrNameY = "top"; }
+      animatorFn = _animatic_drifterY(speed, obj[attrNameY], heading, wrap, maxY);
+      _animatic_animateWithAnimator(obj, attrNameY, animatorFn);
+      if (obj.left) { attrNameX = "left"; }
+      animatorFn = _animatic_drifterX(speed, obj[attrNameX], heading, wrap, maxX);
+      _animatic_animateWithAnimator(obj, attrNameX, animatorFn);
     }
-    var attrNameY = "y";
-    if (obj.top) {
-        attrNameY = "top";
-    }
-    animatorFn = _animatic_drifterY(speed, obj[attrNameY], heading, wrap, maxY);
-    _animatic_animateWithAnimator(obj, attrNameY, animatorFn);
-    var attrNameX = "x";
-    if (obj.left) {
-        attrNameX = "left";
-    }
-    animatorFn = _animatic_drifterX(speed, obj[attrNameX], heading, wrap, maxX);
-    _animatic_animateWithAnimator(obj, attrNameX, animatorFn);
-}
-function stopAnimation(obj, attrNameValue)
-{
-    var attrName = attrNameValue || "";
-    for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
+    function stopAnimation(obj, attrNameValue) {
+      var attrName = attrNameValue || "";
+      for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
         var o = _animatic_Objects[i];
         var a = _animatic_Attributes[i];
         if ((o == obj) && ((a == attrName) || (attrName = ""))) {
-            _animatic_Objects.splice(i, 1);
-            _animatic_Attributes.splice(i, 1);
+          _animatic_Objects.splice(i, 1);
+          _animatic_Attributes.splice(i, 1);
         }
+      }
     }
-}
-function _animatic_animateWithAnimator(obj, attrName, animatorFn)
-{
-    obj["animatic_" + attrName] = animatorFn;
-    for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
+    function _animatic_animateWithAnimator(obj, attrName, animatorFn) {
+      obj["animatic_" + attrName] = animatorFn;
+      for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
         var o = _animatic_Objects[i];
         var a = _animatic_Attributes[i];
         if ((o == obj) && (a == attrName)) {
-            _animatic_Objects.splice(i, 1);
-            _animatic_Attributes.splice(i, 1);
+          _animatic_Objects.splice(i, 1);
+          _animatic_Attributes.splice(i, 1);
         }
+      }
+      _animatic_Objects.push(obj);
+      _animatic_Attributes.push(attrName);
     }
-    _animatic_Objects.push(obj);
-    _animatic_Attributes.push(attrName);
-}
-setInterval(function()
-{
-    _animatic_updateAll()
-}, 10);
+    setInterval(function() { _animatic_updateAll() }, 10);
 
-function _animatic_updateAll()
-{
-    for (i in _animatic_Objects) {
+    function _animatic_updateAll() {
+      for (i in _animatic_Objects) {
         var obj = _animatic_Objects[i];
         var attrName = _animatic_Attributes[i];
         var units = _animatic_unitsFor(obj[attrName]);
         var newValue = obj["animatic_" + attrName]();
         newValue = Math.round(newValue * 1000) / 1000;
         if (attrName.match("^_item_")  == "_item_") {
-            var origObject = obj["_object"];
-            var origAttr = obj["_attr"];
-            var origIndex = eval(attrName.substring(6));
-            origObject[origAttr][eval(origIndex)] = _animatic_addUnitsTo("" + newValue, units);
+          var origObject = obj["_object"];
+          var origAttr = obj["_attr"];
+          var origIndex = eval(attrName.substring(6));
+          origObject[origAttr][eval(origIndex)] = _animatic_addUnitsTo("" + newValue, units);
         } else {
-            obj[attrName] = _animatic_addUnitsTo("" + newValue, units);
+          obj[attrName] = _animatic_addUnitsTo("" + newValue, units);
         }
+      }
     }
-}
 
-function _animatic_stripUnits(s)
-{
-    return ("" + s).replace( /[a-z%]/ig, "");
-}
-
-function _animatic_unitsFor(s)
-{
-    return ("" + s).replace( /[0-9.-]+/ig, "?");
-}
-
-function _animatic_addUnitsTo(s, u)
-{
-    if (u == "?") {
-        return eval(s);
+    function _animatic_stripUnits(s) {
+      return ("" + s).replace( /[a-z%]/ig, "");
     }
-    if (u.match(/\?.+\?/)) {
+
+    function _animatic_unitsFor(s) {
+      return ("" + s).replace( /[0-9.-]+/ig, "?");
+    }
+
+    function _animatic_addUnitsTo(s, u) {
+      if (u == "?") { return eval(s); }
+      if (u.match(/\?.+\?/)) {
         throw "Animatic cannot animate an attribute with multiple parameters: '" + u + "'";
+      }
+      return u.replace( /\?/ig, "" + s);
     }
-    return u.replace( /\?/ig, "" + s);
-}
 
-function _animatic_now()
-{
-    return (new Date()).valueOf();
-}
-function _animatic_runner(p, fromValue, toValue, obj, attrName, seq)
-{
-    var v1 = eval(_animatic_stripUnits(fromValue + ""));
-    var v2 = eval(_animatic_stripUnits(toValue + ""));
-    var now = _animatic_now();
-    var then = now + (p * 1000);
-    var seqRun = false;
-    function counterClosure() {
+    function _animatic_now() { return (new Date()).valueOf(); }
+
+    function _animatic_runner(p, fromValue, toValue, obj, attrName, seq) {
+      var v1 = eval(_animatic_stripUnits(fromValue + ""));
+      var v2 = eval(_animatic_stripUnits(toValue + ""));
+      var now = _animatic_now();
+      var then = now + (p * 1000);
+      var seqRun = false;
+      function counterClosure() {
         var justNow = _animatic_now();
         if (justNow >= then) {
-            stopAnimation(obj, attrName);
-            if (!seqRun) {
-                seqRun = true;
-                if (seq.next) {
-                    seq.next();
-                }
-            }
-            return v2;
+          stopAnimation(obj, attrName);
+          if (!seqRun) {
+            seqRun = true;
+            if (seq.next) { seq.next(); }
+          }
+          return v2;
         }
         var prop = (justNow - now) / (then - now);
         var currently = v1 + (Math.sin(prop * Math.PI / 2) * (v2 - v1));
         return currently;
+      }
+      return counterClosure;
     }
-    return counterClosure;
-}
 
-function _animatic_drifterX(speedValue, startXValue, headingValue, wrap, maxXValue)
-{
-    var speed = speedValue;
-    var startX = eval(_animatic_stripUnits(startXValue + ""));
-    var heading = eval(_animatic_stripUnits(headingValue + ""));
-    var maxX = eval(_animatic_stripUnits(maxXValue + ""));
-    var now = _animatic_now();
-    function counterClosure() {
+    function _animatic_drifterX(speedValue, startXValue, headingValue, wrap, maxXValue) {
+      var speed = speedValue;
+      var startX = eval(_animatic_stripUnits(startXValue + ""));
+      var heading = eval(_animatic_stripUnits(headingValue + ""));
+      var maxX = eval(_animatic_stripUnits(maxXValue + ""));
+      var now = _animatic_now();
+      function counterClosure() {
         var justNow = _animatic_now();
         var diff = (justNow - now);
         var cx = startX + diff * speed * Math.sin(heading * Math.PI / 180.0) / 1000;
         if (wrap) {
-            while (cx < 0) {
-                cx = cx + maxX;
-            }
-            if (cx > maxX) {
-                cx = cx % maxX;
-//      now = now + ((maxXValue - startX) / speed);
-            }
+          while (cx < 0) { cx = cx + maxX; }
+          if (cx > maxX) { cx = cx % maxX; }
         }
         return cx;
+      }
+      return counterClosure;
     }
-    return counterClosure;
-}
 
-function _animatic_drifterY(speedValue, startYValue, headingValue, wrap, maxYValue)
-{
-    var speed = speedValue;
-    var startY = eval(_animatic_stripUnits(startYValue + ""));
-    var heading = eval(_animatic_stripUnits(headingValue + ""));
-    var maxY = eval(_animatic_stripUnits(maxYValue + ""));
-    var now = _animatic_now();
-    function counterClosure() {
+    function _animatic_drifterY(speedValue, startYValue, headingValue, wrap, maxYValue) {
+      var speed = speedValue;
+      var startY = eval(_animatic_stripUnits(startYValue + ""));
+      var heading = eval(_animatic_stripUnits(headingValue + ""));
+      var maxY = eval(_animatic_stripUnits(maxYValue + ""));
+      var now = _animatic_now();
+      function counterClosure() {
         var justNow = _animatic_now();
         var diff = (justNow - now);
         var cy = startY - diff * speed * Math.cos(heading * Math.PI / 180.0) / 1000;
         if (wrap) {
-            while (cy < 0) {
-                cy = cy + maxY;
-            }
-            if (cy > maxY) {
-                cy = cy % maxY;
-                now = now + ((maxYValue - startY) / speed);
-            }
+          while (cy < 0) { cy = cy + maxY; }
+          if (cy > maxY) {
+            cy = cy % maxY;
+            now = now + ((maxYValue - startY) / speed);
+          }
         }
         return cy;
+      }
+      return counterClosure;
     }
-    return counterClosure;
-}
 
-function _animatic_rotator(p)
-{
-    var now = _animatic_now();
-    var then = now + (Math.abs(p) * 1000);
-    var sign = (p < 0) ? -1 : 1;
-    function counterClosure() {
+    function _animatic_rotator(p) {
+      var now = _animatic_now();
+      var then = now + (Math.abs(p) * 1000);
+      var sign = (p < 0) ? -1 : 1;
+      function counterClosure() {
         var justNow = _animatic_now();
         if (justNow >= then) {
-            now = justNow;
-            then = now + (Math.abs(p) * 1000);
+          now = justNow;
+          then = now + (Math.abs(p) * 1000);
         }
         var prop = (justNow - now) / (then - now);
         return sign * prop * 360.0;
+      }
+      return counterClosure;
     }
-    return counterClosure;
-}
 
-function _animatic_springer(p, min, scale)
-{
-    var f = _animatic_rotator(p);
-    function counterClosure() {
+    function _animatic_springer(p, min, scale) {
+      var f = _animatic_rotator(p);
+      function counterClosure() {
         return scale * (Math.sin(f() * Math.PI / 180.0) + min);
+      }
+      return counterClosure;
     }
-    return counterClosure;
-}
-</script>
-
-<script>
-	/**
-	 * Copyright (c) 2013 Andy Cohen, https://github.com/OutlawAndy
-	 *
-	 * Permission is hereby granted, free of charge, to any person obtaining
-	 * a copy of this software and associated documentation files (the
-	 * "Software"), to deal in the Software without restriction, including
-	 * without limitation the rights to use, copy, modify, merge, publish,
-	 * distribute, sublicense, and/or sell copies of the Software, and to
-	 * permit persons to whom the Software is furnished to do so
-	**/
-
-	// <!-------------------------------------------  Global Namespace  -->
-		var canvas;
-		var spaceship;
-		var asteroidTotal = asteroidQuery();
+  </script>
+  <script>
+    /**
+     * Copyright (c) 2013 Andy Cohen, https://github.com/OutlawAndy
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining
+     * a copy of this software and associated documentation files (the
+     * "Software"), to deal in the Software without restriction, including
+     * without limitation the rights to use, copy, modify, merge, publish,
+     * distribute, sublicense, and/or sell copies of the Software, and to
+     * permit persons to whom the Software is furnished to do so
+    **/
+// <!-------------------------------------------  Global Namespace  -->
+    var canvas, spaceship, startTime, totalTime, tPad;
+    var asteroidTotal = asteroidQuery();
     var starsInTheSky = 200;
-		var roid;
-		var asteroids = [];
-		var photons = [];
-		var explosions = [];
+    var asteroids = [];
+    var photons = [];
+    var explosions = [];
     var stars = [];
-		var tPad;
-		var startTime;
-		var endTime = 'not set';
-		var totalTime;
-		var totalShots = 0;
-		var totalKills = 0;
+    var endTime = 'not set';
+    var totalShots = 0;
+    var totalKills = 0;
 
-			function asteroidQuery() {
-				var roidCount = 25;
-				if(/asteroids/.exec(window.location.search) != null){
-					roidCount = /asteroids=(\d+)/.exec(window.location.search)[1]
-				}
-				return roidCount;
-			}
-	// <!--------------------------------------------  Space/Stars  -->
-			function Star() {
-        this.x = Math.random()*canvas.width;
-        this.y = Math.random()*canvas.height;
-        this.radius = Math.random();
-        this.color = "#eafbff";
-        this.paint = function(ctx) {
-		      this.y += this.radius*5;
-		      if(this.y > canvas.height) { this.y = 0; }
-	        ctx.beginPath();
-	        ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
-	        ctx.closePath();
-	        ctx.fillStyle = this.color;
-	        ctx.fill();
+    function asteroidQuery() {
+      var roidCount = 25;
+      if(/asteroids/.exec(window.location.search) != null){
+        roidCount = /asteroids=(\d+)/.exec(window.location.search)[1]
+      }
+      return roidCount;
+    }
+// <!--------------------------------------------  Space/Stars  -->
+    function Star() {
+      this.x = Math.random()*canvas.width;
+      this.y = Math.random()*canvas.height;
+      this.radius = Math.random();
+      this.color = "#eafbff";
+      this.paint = function(ctx) {
+        this.y += this.radius*5;
+        if(this.y > canvas.height) { this.y = 0; }
+        ctx.beginPath();
+        ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
+        ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+// <!--------------------------------------------  Explosion Class  -->
+    function Explosion(x,y,min,max,duration) {
+      this.x = x;
+      this.y = y;
+      this.min = min;
+      this.max = max;
+      this.gone = false;
+      this.paint = function(ctx) {
+        ctx.fillStyle = "rgba(90,200,50,0.7)";
+        ctx.translate(this.x, this.y);
+        ctx.fillRect(-10, -10, 20, 20);
+      }
+    }
+// <!--------------------------------------------  Photon Class  -->
+    function Photon(x,y,heading) {
+      this.x = x;
+      this.y = y;
+      this.heading = heading;
+      this.speed = 1000;
+      this.gone = false;
+      drift(this, this.heading, this.speed, false);
+      this.paint = function(ctx) {
+        this.gone = ((this.x < 0) || (this.x > canvas.width) || (this.y < 0) || (this.y > canvas.height));
+        if(this.gone) { stopAnimation(this); return; }
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.heading * Math.PI / 180);
+        ctx.strokeStyle = "rgb(221, 255, 0)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (var i = 0; i < 5; i++) {
+          ctx.moveTo(0, i * 2.0);
+          ctx.lineTo(0, 1 + i * 2.0);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        for(var i = 0; i <asteroids.length; i++) {
+          if(asteroids[i].isHitBy(this.x,this.y)) {
+            totalKills++;
+            this.gone = true;
+            asteroids[i].gone = true;
+            explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, 20, 120, 1000));
+          }
         }
       }
-	// <!--------------------------------------------  Explosion Class  -->
-			function Explosion(x,y,min,max,duration) {
-				this.x = x;
-				this.y = y;
-				this.min = min;
-				this.max = max;
-				this.gone = false;
-				// this.dieSlow = function(){ this.gone = true }
-				this.paint = function(ctx) {
-						ctx.fillStyle = "rgba(90,200,50,0.7)";
-						ctx.translate(this.x, this.y);
-						ctx.fillRect(-10, -10, 20, 20);
-						// setTimeout("dieSlow()",duration);
-				}
-			}
-
-	// <!--------------------------------------------  Photon Class  -->
-			function Photon(x,y,heading) {
-				this.x = x;
-				this.y = y;
-				this.heading = heading;
-				this.speed = 1000;
-				this.gone = false;
-				drift(this, this.heading, this.speed, false);
-				this.paint = function(ctx) {
-						this.gone = ((this.x < 0) || (this.x > canvas.width) || (this.y < 0) || (this.y > canvas.height));
-						if(this.gone) {
-							stopAnimation(this);
-							return;
-						}
-						ctx.translate(this.x, this.y);
-						ctx.rotate(this.heading * Math.PI / 180);
-						ctx.strokeStyle = "rgb(221, 255, 0)";
-						ctx.lineWidth = 3;
-						ctx.beginPath();
-						for (var i = 0; i < 5; i++) {
-							ctx.moveTo(0, i * 2.0);
-							ctx.lineTo(0, 1 + i * 2.0);
-						}
-						ctx.closePath();
-						ctx.stroke();
-					for(var i = 0; i <asteroids.length; i++) {
-						if(asteroids[i].isHitBy(this.x,this.y)) {
-							totalKills++;
-							this.gone = true;
-							asteroids[i].gone = true;
-								explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, 20, 120, 1000));
-						}
-					}
-				}
-			}
-	// <!--------------------------------------------  Asteroid Class  -->
-			function Asteroid() {
-				this.image = roid;
-				this.origin = { x: -10, y: -10 };
-				this.size = { width: 20, height: 20 };
-				this.x = Math.random() * canvas.width;
-				this.y = Math.random() * canvas.height;
-				this.heading = Math.random() * 360;
-				this.tilt = 0;
-				this.speed = Math.random() * 60;
-				drift(this, this.heading, this.speed);
-				rotate(this, "tilt", Math.random() * 60 - 30);
-				this.isHitBy = function(x,y) {
-						var xDistance = (x - this.x);
-							if(xDistance < 0) xDistance = -xDistance;
-						var yDistance = (y - this.y);
-							if(yDistance < 0) yDistance = -yDistance;
-				return ((xDistance < this.size.width) && (yDistance < this.size.height));
-				}
-				this.paint = function(ctx) {
-						ctx.translate(this.x, this.y);
-						ctx.rotate(this.tilt * Math.PI / 180);
-						ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
-				}
-			}
-
-		//one spaceship object that can {shoot},{accelerate},{decelerate},{veerLeft},{veerRight}
-	// <!-------------------------------------------  Spaceship Class  -->
-			function Spaceship() {
-				this.x = canvas.width/2;
-				this.y = canvas.height/2;
-				this.heading = 0;
-				this.speed = 0;
-				this.drift = function() {
-						drift(this, this.heading, this.speed);
-				}
-				this.veerLeft = function() {
-						this.heading -= 10;
-						this.drift();
-				}
-				this.veerRight = function () {
-						this.heading += 10;
-						this.drift();
-				}
-				this.accelerate = function() {
-						if(this.speed > 600) { return; }
-						this.speed += 60;
-						this.drift();
-				}
-				this.decelerate = function() {
-						this.speed -= 60;
-						if(this.speed < 0) { this.speed = 0.1; }
-						this.drift();
-				}
-				this.shoot = function() {
-						totalShots++;
-						var burst = photons.length;
-						photons[burst] = new Photon(this.x, this.y, this.heading);
-				}
-				this.paint = function(ctx) {
-						ctx.strokeStyle = "rgba(255,255,255,1.0)";
-						ctx.fillStyle = "rgba(255,0,0,1.0)";
-						ctx.beginPath();
-						ctx.translate(this.x, this.y);
-						ctx.rotate(this.heading * Math.PI / 180);
-						ctx.moveTo( -8, 10 );
-						ctx.lineTo(  0, -9 );
-						ctx.lineTo(  8, 10 );
-						ctx.closePath();
-						ctx.lineWidth = 2;
-						ctx.fill();
-						ctx.stroke();
-				}
-			}
-
-	// <!-------------------------------------------    User  Input    -->
-		function onKeyDown(event) {
-			event.preventDefault();
-	 		switch(event.keyCode) {
-
-	 			case 32: spaceship.shoot();				return false;
-	 			case 39: spaceship.veerRight();		return false;
-	 			case 37: spaceship.veerLeft();		return false;
-	 			case 38: spaceship.accelerate();	return false;
-	 			case 40: spaceship.decelerate();	return false;
-	 		}
-
-	 	}
-	// <!-----------------------------------  GameOver & game clock   -->
-		function gameOver(ctx) {
-			if(endTime == 'not set'){
-				endTime = totalTime;
-			}
-			ctx.restore();
-			ctx.fillStyle = "white";
-			ctx.font = "bold 64pt Arial";
-			ctx.fillText("GAME OVER", canvas.width/3, canvas.height/2);
-			ctx.font = "bold 20pt Arial";
-			ctx.fillText("Total Time: " + endTime, canvas.width/3 + 20, canvas.height/2 + 70);
-			ctx.fillText("Shots Fired: " + totalShots, canvas.width/3 + 20, canvas.height/2 + 100);
-			ctx.fillText("Total Kills: " + totalKills, canvas.width/3 + 20, canvas.height/2 + 130);
-		}
-
-		function paintClock(ctx) {
-			ctx.fillStyle = "green";
-			ctx.font = "bold 18pt Arial";
-			ctx.fillText("elapsed: " + totalTime, 10, 30);
-		}
-		function calculateTime() {
-			var milliseconds = (new Date()) - startTime;
-			var minutes = Math.floor(milliseconds * 0.001 / 60);
-			var seconds = Math.floor(milliseconds * 0.001 % 60);
-			totalTime = minutes + "min, " + seconds + "sec";
-		}
-
-	// <!-----------------------------------  Application Loop & Logic  -->
-
-		function dontPaintTheDead(array) {
-			for(var i = array.length - 1; i >= 0; i--) {
-				var a = array[i];
-				if (a.gone) {
-					array.splice(i, 1);
-				}
-			}
-		}
-		function paintAll(ctx,painties) {
-			for (var i=0; i<painties.length; i++) {
-				ctx.save();
-				painties[i].paint(ctx);
-				ctx.restore();
-			}
-		}
-		function refresh() {
-			var ctx = canvas.getContext('2d');
-			ctx.fillStyle = "rgba(0,0,0,0.8)";
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+// <!--------------------------------------------  Asteroid Class  -->
+    function Asteroid(num) {
+      this.image = document.getElementById('roid' + num);
+      this.origin = { x: -10, y: -10 };
+      this.size = { width: 20, height: 20 };
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.heading = Math.random() * 360;
+      this.tilt = 0;
+      this.speed = Math.random() * 60;
+      drift(this, this.heading, this.speed);
+      rotate(this, "tilt", Math.random() * 60 - 30);
+      this.isHitBy = function(x,y) {
+        var xDistance = (x - this.x);
+        var yDistance = (y - this.y);
+        if(xDistance < 0) xDistance = -xDistance;
+        if(yDistance < 0) yDistance = -yDistance;
+        return ((xDistance < this.size.width) && (yDistance < this.size.height));
+      }
+      this.paint = function(ctx) {
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.tilt * Math.PI / 180);
+        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
+      }
+    }
+// <!-------------------------------------------  Spaceship Class  -->
+    function Spaceship() {
+      this.image = document.getElementById('spaceship');
+      this.origin = { x: -25, y: -20 };
+      this.size = { width: 50, height: 40 };
+      this.x = canvas.width/2;
+      this.y = canvas.height/2;
+      this.heading = 0;
+      this.speed = 0;
+      this.drift = function() {
+        drift(this, this.heading, this.speed);
+      }
+      this.veerLeft = function() {
+        this.heading -= 10;
+        this.drift();
+      }
+      this.veerRight = function () {
+        this.heading += 10;
+        this.drift();
+      }
+      this.accelerate = function() {
+        if(this.speed > 600) return;
+        this.speed += 60;
+        this.drift();
+      }
+      this.decelerate = function() {
+        this.speed -= 60;
+        if(this.speed < 0) this.speed = 0.1;
+        this.drift();
+      }
+      this.shoot = function() {
+        photons[photons.length] = new Photon(this.x, this.y, this.heading);
+        totalShots++;
+      }
+      this.paint = function(ctx) {
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.heading) * Math.PI / 180);
+        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
+      }
+    }
+// <!-------------------------------------------    User  Input    -->
+    function onKeyDown(event) {
+      event.preventDefault();
+      switch(event.keyCode) {
+        case 32: spaceship.shoot();       return false;
+        case 39: spaceship.veerRight();   return false;
+        case 37: spaceship.veerLeft();    return false;
+        case 38: spaceship.accelerate();  return false;
+        case 40: spaceship.decelerate();  return false;
+      }
+    }
+// <!-----------------------------------  GameOver & game clock   -->
+    function gameOver(ctx) {
+      if(endTime == 'not set') endTime = totalTime;
+      ctx.restore();
+      ctx.fillStyle = "white";
+      ctx.font = "bold 64pt Arial";
+      ctx.fillText("GAME OVER", canvas.width/3, canvas.height/2);
+      ctx.font = "bold 20pt Arial";
+      ctx.fillText("Total Time: "  + endTime,    canvas.width/3 + 20, canvas.height/2 + 70 );
+      ctx.fillText("Shots Fired: " + totalShots, canvas.width/3 + 20, canvas.height/2 + 100);
+      ctx.fillText("Total Kills: " + totalKills, canvas.width/3 + 20, canvas.height/2 + 130);
+    }
+    function paintClock(ctx) {
+      ctx.fillStyle = "green";
+      ctx.font = "bold 18pt Arial";
+      ctx.fillText("elapsed: " + totalTime, 10, 30);
+    }
+    function calculateTime() {
+      var milliseconds = (new Date()) - startTime;
+      var minutes = Math.floor(milliseconds * 0.001 / 60);
+      var seconds = Math.floor(milliseconds * 0.001 % 60);
+      totalTime = minutes + "min, " + seconds + "sec";
+    }
+// <!-----------------------------------  Application Loop & Logic  -->
+    function dontPaintTheDead(array) {
+      for(var i = array.length - 1; i >= 0; i--) {
+        if (array[i].gone) array.splice(i, 1);
+      }
+    }
+    function paintAll(ctx,painties) {
+      for (var i=0; i<painties.length; i++) {
+        ctx.save();
+        painties[i].paint(ctx);
+        ctx.restore();
+      }
+    }
+    function refresh() {
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       paintAll(ctx,stars);
-			if (asteroids.length == 0) {
-				gameOver(ctx);
-			} else {
-				spaceship.paint(ctx);
-				ctx.restore();
-				calculateTime();
-				paintClock(ctx);
-				ctx.restore();
-				var pieces = [];
-				pieces[0] = asteroids;
-				pieces[1] = photons;
-				pieces[2] = explosions;
-				for(var i = 0; i < pieces.length; i++) {
-					paintAll(ctx,pieces[i]);
-					dontPaintTheDead(pieces[i]);
-				}
-			}
-		}
-		function repaintLoop() {
-			refresh();
-			setTimeout("repaintLoop()",50);
-		}
-
-		function init() {
-			startTime = new Date();
-			roid = document.getElementById('roid');
-			canvas  = document.getElementById("game");
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-			spaceship = new Spaceship();
-			for (var i=0; i<asteroidTotal; i++) {
-				asteroids[i]  = new Asteroid();
-			}
+      if (asteroids.length == 0) {
+        gameOver(ctx);
+      } else {
+        spaceship.paint(ctx);
+        ctx.restore();
+        calculateTime();
+        paintClock(ctx);
+        ctx.restore();
+        var pieces = [];
+        pieces[0] = asteroids;
+        pieces[1] = photons;
+        pieces[2] = explosions;
+        for(var i = 0; i < pieces.length; i++) {
+          paintAll(ctx,pieces[i]);
+          dontPaintTheDead(pieces[i]);
+        }
+      }
+    }
+    function repaintLoop() {
+      refresh();
+      setTimeout("repaintLoop()",50);
+    }
+    function init() {
+      startTime = new Date();
+      canvas  = document.getElementById("game");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      spaceship = new Spaceship();
+      for (var i=0; i<asteroidTotal; i++) {
+        asteroids[i]  = new Asteroid(Math.floor(Math.random() * 6));
+      }
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
-			repaintLoop();
-		}
+      repaintLoop();
+    }
 
-		window.addEventListener('load',init,true);
-		window.addEventListener('keydown',onKeyDown,true);
+    window.addEventListener('load',init,true);
+    window.addEventListener('keydown',onKeyDown,true);
 
-</script>
+  </script>
 </body>
 </html>
