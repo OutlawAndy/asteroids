@@ -11,9 +11,12 @@
   <img id="roid0" src="http://s3.amazonaws.com/roids/images/roid1.jpg" style="width:20px; height:20px; display:none" />
   <img id="roid1" src="http://s3.amazonaws.com/roids/images/roid2.jpg" style="width:20px; height:20px; display:none" />
   <img id="roid2" src="http://s3.amazonaws.com/roids/images/roid3.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid3" src="http://s3.amazonaws.com/roids/images/roid4.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid4" src="http://s3.amazonaws.com/roids/images/roid5.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid5" src="http://s3.amazonaws.com/roids/images/roid6.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid2" src="http://s3.amazonaws.com/roids/images/roid4.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid3" src="http://s3.amazonaws.com/roids/images/roid5.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid4" src="http://s3.amazonaws.com/roids/images/roid6.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid5" src="http://s3.amazonaws.com/roids/images/roid7.jpg" style="width:20px; height:20px; display:none" />
+  <img id="roid6" src="http://s3.amazonaws.com/roids/images/roid8.jpg" style="width:20px; height:20px; display:none" />
+  <img id="explosion" src="http://s3.amazonaws.com/roids/images/exploader.jpg" style="width:40px; height:40px; display:none" />
   <img id="spaceship" src="http://s3.amazonaws.com/roids/images/spaceship.png" style="width:50px; height:40px; display:none" />
   <canvas id="game">
     Sorry, Your Browser does not support the Canvas Element
@@ -247,7 +250,7 @@
   </script>
   <script>
     /**
-     * Copyright (c) 2013 Andy Cohen, https://github.com/OutlawAndy
+     * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
      *
      * Permission is hereby granted, free of charge, to any person obtaining
      * a copy of this software and associated documentation files (the
@@ -257,16 +260,10 @@
      * permit persons to whom the Software is furnished to do so
     **/
 // <!-------------------------------------------  Global Namespace  -->
-    var canvas, spaceship, startTime, totalTime, tPad;
-    var asteroidTotal = asteroidQuery();
-    var starsInTheSky = 200;
-    var asteroids = [];
-    var photons = [];
-    var explosions = [];
-    var stars = [];
-    var endTime = 'not set';
-    var totalShots = 0;
-    var totalKills = 0;
+    var canvas, spaceship, startTime, totalTime, tPad,
+        asteroidTotal = asteroidQuery(), starsInTheSky = 200,
+        asteroids = [], photons = [], explosions = [], stars = [],
+        endTime = 'not set', totalShots = 0, totalKills = 0;
 
     function asteroidQuery() {
       var roidCount = 25;
@@ -292,16 +289,25 @@
       }
     }
 // <!--------------------------------------------  Explosion Class  -->
-    function Explosion(x,y,min,max,duration) {
+    function Explosion(x,y,heading) {
+      this.image = document.getElementById('explosion');
+      this.size = { width: 0, height: 0 };
+      this.origin = { x: -(this.size.width/2), y: -(this.size.height/2) };
+      this.heading = heading;
       this.x = x;
       this.y = y;
-      this.min = min;
-      this.max = max;
       this.gone = false;
       this.paint = function(ctx) {
-        ctx.fillStyle = "rgba(90,200,50,0.7)";
-        ctx.translate(this.x, this.y);
-        ctx.fillRect(-10, -10, 20, 20);
+        this.size.width = this.size.width + 10
+        this.size.height = this.size.height + 10
+        if (this.size.width == 60) {
+          this.gone = true;
+        } else {
+          ctx.globalAlpha = (100 / (this.size.width/2) * 0.1)
+          ctx.translate(this.x, this.y);
+          ctx.rotate((this.heading * Math.PI / 180) - 90);
+          ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
+        }
       }
     }
 // <!--------------------------------------------  Photon Class  -->
@@ -331,7 +337,7 @@
             totalKills++;
             this.gone = true;
             asteroids[i].gone = true;
-            explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, 20, 120, 1000));
+            explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, this.heading));
           }
         }
       }
@@ -449,7 +455,7 @@
       }
     }
     function refresh() {
-      var ctx = canvas.getContext('2d');
+      var ctx = canvas.getContext('2d'), pieces = [];
       ctx.fillStyle = "rgba(0,0,0,0.8)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
@@ -462,7 +468,6 @@
         calculateTime();
         paintClock(ctx);
         ctx.restore();
-        var pieces = [];
         pieces[0] = asteroids;
         pieces[1] = photons;
         pieces[2] = explosions;
@@ -483,17 +488,15 @@
       canvas.height = window.innerHeight;
       spaceship = new Spaceship();
       for (var i=0; i<asteroidTotal; i++) {
-        asteroids[i]  = new Asteroid(Math.floor(Math.random() * 6));
+        asteroids[i]  = new Asteroid(Math.floor(Math.random() * 5));
       }
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
       repaintLoop();
     }
-
     window.addEventListener('load',init,true);
     window.addEventListener('keydown',onKeyDown,true);
-
   </script>
 </body>
 </html>
