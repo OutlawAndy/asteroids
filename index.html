@@ -18,6 +18,9 @@
   <img id="roid6" src="http://s3.amazonaws.com/roids/images/roid8.jpg" style="width:20px; height:20px; display:none" />
   <img id="explosion" src="http://s3.amazonaws.com/roids/images/exploader.jpg" style="width:40px; height:40px; display:none" />
   <img id="spaceship" src="http://s3.amazonaws.com/roids/images/spaceship.png" style="width:50px; height:40px; display:none" />
+  <audio id="lazer" src="http://s3.amazonaws.com/roids/audio/lazer.m4a" preload="auto"></audio>
+  <audio id="exploder" src="http://s3.amazonaws.com/roids/audio/explosion.mp3" preload="auto"></audio>
+  <audio id="soundtrack" src="http://s3.amazonaws.com/roids/audio/soundtrack.mp3" preload="auto" loop="true" autoplay="true"></audio>
   <canvas id="game">
     Sorry, Your Browser does not support the Canvas Element
   </canvas>
@@ -44,21 +47,12 @@
      * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
      * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      */
-
-    var _animatic_Objects = [];
-    var _animatic_Attributes = [];
-
-    //
-    // These are the major functions.
-    //
-
+    var _animatic_Objects = [], _animatic_Attributes = [];
     function stopAllAnimation(){
       _animatic_Objects = [];
       _animatic_Attributes = [];
     }
-
     function _animatic_Sequencer() {}
-
     function animate(obj, attrName, targetValue, howManySecs) {
       var t = howManySecs || 0.25;
       var seq = new _animatic_Sequencer();
@@ -77,7 +71,6 @@
       }
       return seq;
     }
-
     function rotate(obj, attrName, rpm) {
       animatorFn = _animatic_rotator(60.0 / rpm);
       _animatic_animateWithAnimator(obj, attrName, animatorFn);
@@ -141,15 +134,12 @@
         }
       }
     }
-
     function _animatic_stripUnits(s) {
       return ("" + s).replace( /[a-z%]/ig, "");
     }
-
     function _animatic_unitsFor(s) {
       return ("" + s).replace( /[0-9.-]+/ig, "?");
     }
-
     function _animatic_addUnitsTo(s, u) {
       if (u == "?") { return eval(s); }
       if (u.match(/\?.+\?/)) {
@@ -157,9 +147,7 @@
       }
       return u.replace( /\?/ig, "" + s);
     }
-
     function _animatic_now() { return (new Date()).valueOf(); }
-
     function _animatic_runner(p, fromValue, toValue, obj, attrName, seq) {
       var v1 = eval(_animatic_stripUnits(fromValue + ""));
       var v2 = eval(_animatic_stripUnits(toValue + ""));
@@ -182,7 +170,6 @@
       }
       return counterClosure;
     }
-
     function _animatic_drifterX(speedValue, startXValue, headingValue, wrap, maxXValue) {
       var speed = speedValue;
       var startX = eval(_animatic_stripUnits(startXValue + ""));
@@ -201,7 +188,6 @@
       }
       return counterClosure;
     }
-
     function _animatic_drifterY(speedValue, startYValue, headingValue, wrap, maxYValue) {
       var speed = speedValue;
       var startY = eval(_animatic_stripUnits(startYValue + ""));
@@ -223,7 +209,6 @@
       }
       return counterClosure;
     }
-
     function _animatic_rotator(p) {
       var now = _animatic_now();
       var then = now + (Math.abs(p) * 1000);
@@ -239,7 +224,6 @@
       }
       return counterClosure;
     }
-
     function _animatic_springer(p, min, scale) {
       var f = _animatic_rotator(p);
       function counterClosure() {
@@ -260,7 +244,7 @@
      * permit persons to whom the Software is furnished to do so
     **/
 // <!-------------------------------------------  Global Namespace  -->
-    var canvas, spaceship, startTime, totalTime, tPad,
+    var canvas, spaceship, startTime, totalTime, tPad, sounds = [],
         asteroidTotal = asteroidQuery(), starsInTheSky = 200,
         asteroids = [], photons = [], explosions = [], stars = [],
         endTime = 'not set', totalShots = 0, totalKills = 0;
@@ -286,6 +270,13 @@
         ctx.closePath();
         ctx.fillStyle = this.color;
         ctx.fill();
+      }
+    }
+// <!--------------------------------------------  Sound effects Class  -->
+    function Sound(fx) {
+      this.fx = document.getElementById(fx);
+      this.play = function() {
+        this.fx.play()
       }
     }
 // <!--------------------------------------------  Explosion Class  -->
@@ -338,6 +329,7 @@
             this.gone = true;
             asteroids[i].gone = true;
             explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, this.heading));
+            sounds.push(new Sound('exploder'));
           }
         }
       }
@@ -359,7 +351,7 @@
         var yDistance = (y - this.y);
         if(xDistance < 0) xDistance = -xDistance;
         if(yDistance < 0) yDistance = -yDistance;
-        return ((xDistance < this.size.width) && (yDistance < this.size.height));
+        return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3));
       }
       this.paint = function(ctx) {
         ctx.translate(this.x, this.y);
@@ -398,7 +390,8 @@
         this.drift();
       }
       this.shoot = function() {
-        photons[photons.length] = new Photon(this.x, this.y, this.heading);
+        photons.push(new Photon(this.x, this.y, this.heading));
+        sounds.push(new Sound('lazer'));
         totalShots++;
       }
       this.paint = function(ctx) {
@@ -454,6 +447,15 @@
         ctx.restore();
       }
     }
+    function playSounds() {
+      // if(sounds.length > 0) {
+      //   sounds.shift().play();
+      // }
+      for(var i = sounds.length - 1; i >=0; i--) {
+        sounds[i].play();
+        sounds.splice(i, 1);
+      }
+    }
     function refresh() {
       var ctx = canvas.getContext('2d'), pieces = [];
       ctx.fillStyle = "rgba(0,0,0,0.8)";
@@ -468,6 +470,7 @@
         calculateTime();
         paintClock(ctx);
         ctx.restore();
+        playSounds();
         pieces[0] = asteroids;
         pieces[1] = photons;
         pieces[2] = explosions;
@@ -479,7 +482,7 @@
     }
     function repaintLoop() {
       refresh();
-      setTimeout("repaintLoop()",50);
+      setTimeout("repaintLoop()",30);
     }
     function init() {
       startTime = new Date();
