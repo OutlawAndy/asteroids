@@ -25,6 +25,19 @@
     Sorry, Your Browser does not support the Canvas Element
   </canvas>
   <script>
+// requestAnimationFrame Polyfill
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame ||
+              window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame ||
+              window.oRequestAnimationFrame ||
+              window.msRequestAnimationFrame ||
+              function( callback, element){
+                window.setTimeout(callback, 1000 / 60);
+              };
+    })();
+  </script>
+  <script>
     /**
      * Copyright (c) 2010 David Griffiths, http://code.google.com/p/animatic/
      *
@@ -115,8 +128,6 @@
       _animatic_Objects.push(obj);
       _animatic_Attributes.push(attrName);
     }
-    setInterval(function() { _animatic_updateAll() }, 10);
-
     function _animatic_updateAll() {
       for (i in _animatic_Objects) {
         var obj = _animatic_Objects[i];
@@ -245,7 +256,7 @@
     **/
 // <!-------------------------------------------  Global Namespace  -->
     var canvas, spaceship, startTime, totalTime, tPad, sounds = [],
-        asteroidTotal = asteroidQuery(), starsInTheSky = 200,
+        asteroidTotal = asteroidQuery(), starsInTheSky = 200, lastTime,
         asteroids = [], photons = [], explosions = [], stars = [],
         endTime = 'not set', totalShots = 0, totalKills = 0;
 
@@ -262,8 +273,8 @@
       this.y = Math.random()*canvas.height;
       this.radius = Math.random();
       this.color = "#eafbff";
-      this.paint = function(ctx) {
-        this.y += this.radius*5;
+      this.paint = function(ctx,dt) {
+        this.y += (this.radius*250) * dt;
         if(this.y > canvas.height) { this.y = 0; }
         ctx.beginPath();
         ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
@@ -289,8 +300,8 @@
       this.y = y;
       this.gone = false;
       this.paint = function(ctx) {
-        this.size.width = this.size.width + 10
-        this.size.height = this.size.height + 10
+        this.size.width += 10;
+        this.size.height += 10;
         if (this.size.width == 60) {
           this.gone = true;
         } else {
@@ -411,6 +422,17 @@
         case 40: spaceship.decelerate();  return false;
       }
     }
+    // <div data-action="shoot">Fire!</div>
+    function touched(event) {
+      event.preventDefault();
+      switch(event.target.dataset["action"]) {
+        case 'shoot': spaceship.shoot();      return false;
+        case 'right': spaceship.veerRight();  return false;
+        case 'left' : spaceship.veerLeft();   return false;
+        case 'accel': spaceship.accelerate(); return false;
+        case 'decel': spaceship.decelerate(); return false;
+      }
+    }
 // <!-----------------------------------  GameOver & game clock   -->
     function gameOver(ctx) {
       if(endTime == 'not set') endTime = totalTime;
@@ -440,6 +462,16 @@
         if (array[i].gone) array.splice(i, 1);
       }
     }
+    function paintSky(ctx) {
+      var now = Date.now();
+      var dt = (now - lastTime) / 1000.0;
+      for (var i=0; i<stars.length; i++) {
+        ctx.save();
+        stars[i].paint(ctx,dt);
+        ctx.restore();
+      }
+      lastTime = now;
+    }
     function paintAll(ctx,painties) {
       for (var i=0; i<painties.length; i++) {
         ctx.save();
@@ -448,9 +480,6 @@
       }
     }
     function playSounds() {
-      // if(sounds.length > 0) {
-      //   sounds.shift().play();
-      // }
       for(var i = sounds.length - 1; i >=0; i--) {
         sounds[i].play();
         sounds.splice(i, 1);
@@ -461,7 +490,7 @@
       ctx.fillStyle = "rgba(0,0,0,0.8)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      paintAll(ctx,stars);
+      paintSky(ctx);
       if (asteroids.length == 0) {
         gameOver(ctx);
       } else {
@@ -480,12 +509,14 @@
         }
       }
     }
-    function repaintLoop() {
+    function main() {
       refresh();
-      setTimeout("repaintLoop()",30);
+      _animatic_updateAll();
+      requestAnimFrame(main);
     }
     function init() {
-      startTime = new Date();
+      lastTime = Date.now();
+      startTime = Date.now();
       canvas  = document.getElementById("game");
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -496,10 +527,11 @@
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
-      repaintLoop();
+      main();
     }
     window.addEventListener('load',init,true);
     window.addEventListener('keydown',onKeyDown,true);
+    window.addEventListener('touchStart', touched,true);
   </script>
 </body>
 </html>
