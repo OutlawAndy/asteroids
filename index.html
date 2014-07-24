@@ -20,7 +20,7 @@
   <img id="spaceship" src="http://s3.amazonaws.com/roids/images/spaceship.png" style="width:50px; height:40px; display:none" />
   <audio id="lazer" src="http://s3.amazonaws.com/roids/audio/lazer.m4a" preload="auto"></audio>
   <audio id="exploder" src="http://s3.amazonaws.com/roids/audio/explosion.mp3" preload="auto"></audio>
-  <audio id="soundtrack" src="http://s3.amazonaws.com/roids/audio/soundtrack.mp3" preload="auto" loop="true" autoplay="true"></audio>
+  <audio id="soundtrack" src="http://s3.amazonaws.com/roids/audio/soundtrack.mp3" preload="auto" loop="true"></audio>
   <canvas id="game">
     Sorry, Your Browser does not support the Canvas Element
   </canvas>
@@ -220,6 +220,10 @@
       }
       return counterClosure;
     }
+    function pulser(obj,attrName,p) {
+      animatorFn = _animatic_springer(p, 0.2, 1);
+      _animatic_animateWithAnimator(obj, attrName, animatorFn)
+    }
     function _animatic_rotator(p) {
       var now = _animatic_now();
       var then = now + (Math.abs(p) * 1000);
@@ -255,10 +259,10 @@
      * permit persons to whom the Software is furnished to do so
     **/
 // <!-------------------------------------------  Global Namespace  -->
-    var canvas, spaceship, startTime, totalTime, tPad, sounds = [],
-        asteroidTotal = asteroidQuery(), starsInTheSky = 200, lastTime,
+    var canvas, spaceship, startTime, totalTime, sounds = [], GamePlay = false,
+        asteroidTotal = asteroidQuery(), starsInTheSky = 200, GameOver = false,
         asteroids = [], photons = [], explosions = [], stars = [],
-        endTime = 'not set', totalShots = 0, totalKills = 0;
+        endTime, totalShots, totalKills, soundTrack, lastTime;
 
     function asteroidQuery() {
       var roidCount = 25;
@@ -287,7 +291,10 @@
     function Sound(fx) {
       this.fx = document.getElementById(fx);
       this.play = function() {
-        this.fx.play()
+        this.fx.play();
+      }
+      this.stop = function() {
+        this.fx.pause();
       }
     }
 // <!--------------------------------------------  Explosion Class  -->
@@ -375,10 +382,6 @@
       this.image = document.getElementById('spaceship');
       this.origin = { x: -25, y: -20 };
       this.size = { width: 50, height: 40 };
-      this.x = canvas.width/2;
-      this.y = canvas.height/2;
-      this.heading = 0;
-      this.speed = 0;
       this.drift = function() {
         drift(this, this.heading, this.speed);
       }
@@ -405,6 +408,13 @@
         sounds.push(new Sound('lazer'));
         totalShots++;
       }
+      this.reset = function() {
+        this.x = canvas.width/2;
+        this.y = canvas.height/2;
+        this.heading = 0;
+        this.speed = 0;
+        this.drift();
+      }
       this.paint = function(ctx) {
         ctx.translate(this.x, this.y);
         ctx.rotate((this.heading) * Math.PI / 180);
@@ -415,6 +425,8 @@
     function onKeyDown(event) {
       event.preventDefault();
       switch(event.keyCode) {
+        case 13: letsPlay();              return false;
+        case 81: endGame();              return false;
         case 32: spaceship.shoot();       return false;
         case 39: spaceship.veerRight();   return false;
         case 37: spaceship.veerLeft();    return false;
@@ -434,27 +446,59 @@
       }
     }
 // <!-----------------------------------  GameOver & game clock   -->
+    function endGame() {
+      stopAllAnimation();
+      soundTrack.stop();
+      GamePlay = false;
+      GameOver = true;
+    }
     function gameOver(ctx) {
       if(endTime == 'not set') endTime = totalTime;
       ctx.restore();
       ctx.fillStyle = "white";
-      ctx.font = "bold 64pt Arial";
-      ctx.fillText("GAME OVER", canvas.width/3, canvas.height/2);
-      ctx.font = "bold 20pt Arial";
-      ctx.fillText("Total Time: "  + endTime,    canvas.width/3 + 20, canvas.height/2 + 70 );
-      ctx.fillText("Shots Fired: " + totalShots, canvas.width/3 + 20, canvas.height/2 + 100);
-      ctx.fillText("Total Kills: " + totalKills, canvas.width/3 + 20, canvas.height/2 + 130);
+      ctx.textAlign = "center"
+      ctx.font = "bold 72pt Arial";
+      ctx.fillText("GAME OVER", 2%4*canvas.width/4, canvas.height/2);
+      ctx.font = "normal 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("Total Time: ",  2%5*canvas.width/5, canvas.height/2 + 30 );
+      ctx.fillText("Shots Fired: ", 2%5*canvas.width/5, canvas.height/2 + 60);
+      ctx.fillText("Total Kills: ", 2%5*canvas.width/5, canvas.height/2 + 90);
+      ctx.textAlign = "right";
+      ctx.fillText( endTime,        3%5*canvas.width/5, canvas.height/2 + 30 );
+      ctx.fillText( totalShots,     3%5*canvas.width/5, canvas.height/2 + 60);
+      ctx.fillText( totalKills,     3%5*canvas.width/5, canvas.height/2 + 90);
+      ctx.textAlign = "center"
+      ctx.font = "italic 24pt Arial";
+      ctx.fillStyle = "rgba(200,200,200,0.2)";
+      ctx.fillText( "Press Enter To Play Again",     2%4*canvas.width/4, canvas.height/2 + 140);
     }
     function paintClock(ctx) {
       ctx.fillStyle = "green";
-      ctx.font = "bold 18pt Arial";
-      ctx.fillText("elapsed: " + totalTime, 10, 30);
+      ctx.font = "italic 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("elapsed: " + totalTime, 10, 20);
     }
     function calculateTime() {
       var milliseconds = (new Date()) - startTime;
       var minutes = Math.floor(milliseconds * 0.001 / 60);
       var seconds = Math.floor(milliseconds * 0.001 % 60);
       totalTime = minutes + "min, " + seconds + "sec";
+    }
+    function instruct(ctx) {
+      ctx.textAlign = "center"
+      ctx.font = "italic 36pt Arial";
+      ctx.fillStyle = "rgba(200,200,200,0.2)";
+      ctx.fillText( "Press Enter To Play",     2%4*canvas.width/4, canvas.height/2);
+      ctx.font = "normal 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("Shoot: ",     2%5*canvas.width/5, canvas.height/2 + 30 );
+      ctx.fillText("Go: ",        2%5*canvas.width/5, canvas.height/2 + 60);
+      ctx.fillText("Turn: ",      2%5*canvas.width/5, canvas.height/2 + 90);
+      ctx.textAlign = "right";
+      ctx.fillText( "SpaceBar",   3%5*canvas.width/5, canvas.height/2 + 30 );
+      ctx.fillText( "Up/Down",    3%5*canvas.width/5, canvas.height/2 + 60);
+      ctx.fillText( "Left/Right", 3%5*canvas.width/5, canvas.height/2 + 90);
     }
 // <!-----------------------------------  Application Loop & Logic  -->
     function dontPaintTheDead(array) {
@@ -487,13 +531,13 @@
     }
     function refresh() {
       var ctx = canvas.getContext('2d'), pieces = [];
-      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillStyle = "rgb(0,0,0)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       paintSky(ctx);
-      if (asteroids.length == 0) {
+      if (GameOver) {
         gameOver(ctx);
-      } else {
+      } else if (GamePlay) {
         spaceship.paint(ctx);
         ctx.restore();
         calculateTime();
@@ -507,27 +551,44 @@
           paintAll(ctx,pieces[i]);
           dontPaintTheDead(pieces[i]);
         }
+        if (asteroids.length == 0) endGame();
+      } else {
+        instruct(ctx);
       }
     }
     function main() {
+      requestAnimFrame(main);
       refresh();
       _animatic_updateAll();
-      requestAnimFrame(main);
     }
-    function init() {
+    function gameSetup() {
       lastTime = Date.now();
-      startTime = Date.now();
-      canvas  = document.getElementById("game");
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      spaceship = new Spaceship();
+      endTime = 'not set';
+      totalShots = 0;
+      totalKills = 0;
+      spaceship.reset();
       for (var i=0; i<asteroidTotal; i++) {
         asteroids[i]  = new Asteroid(Math.floor(Math.random() * 5));
       }
+    }
+    function init() {
+      canvas  = document.getElementById("game");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      soundTrack = new Sound('soundtrack');
+      spaceship = new Spaceship();
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
+      gameSetup();
       main();
+    }
+    function letsPlay() {
+      startTime = Date.now();
+      sounds.push(soundTrack);
+      GamePlay = true;
+      GameOver = false;
+      gameSetup();
     }
     window.addEventListener('load',init,true);
     window.addEventListener('keydown',onKeyDown,true);
