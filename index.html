@@ -258,20 +258,18 @@
      * distribute, sublicense, and/or sell copies of the Software, and to
      * permit persons to whom the Software is furnished to do so
     **/
-// <!-------------------------------------------  Global Namespace  -->
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------------  Global Namespace  -->
+
     var canvas, spaceship, startTime, totalTime, sounds = [], GamePlay = false,
         asteroidTotal = asteroidQuery(), starsInTheSky = 200, GameOver = false,
         asteroids = [], photons = [], explosions = [], stars = [],
         endTime, totalShots, totalKills, soundTrack, lastTime;
 
-    function asteroidQuery() {
-      var roidCount = 25;
-      if(/asteroids/.exec(window.location.search) != null){
-        roidCount = /asteroids=(\d+)/.exec(window.location.search)[1]
-      }
-      return roidCount;
-    }
-// <!--------------------------------------------  Space/Stars  -->
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------------------  Star Class  -->
+
     function Star() {
       this.x = Math.random()*canvas.width;
       this.y = Math.random()*canvas.height;
@@ -287,17 +285,24 @@
         ctx.fill();
       }
     }
-// <!--------------------------------------------  Sound effects Class  -->
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!---------------------------------------  Sound Effects Class  -->
+
     function Sound(fx) {
-      this.fx = document.getElementById(fx);
+      this.media = document.getElementById(fx);
       this.play = function() {
-        this.fx.play();
+        this.media.play();
       }
       this.stop = function() {
-        this.fx.pause();
+        this.media.pause();
+        this.media.currentTime = 0;
       }
     }
-// <!--------------------------------------------  Explosion Class  -->
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!-------------------------------------------  Explosion Class  -->
+
     function Explosion(x,y,heading) {
       this.image = document.getElementById('explosion');
       this.size = { width: 0, height: 0 };
@@ -319,7 +324,10 @@
         }
       }
     }
-// <!--------------------------------------------  Photon Class  -->
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!----------------------------------------------  Photon Class  -->
+
     function Photon(x,y,heading) {
       this.x = x;
       this.y = y;
@@ -352,7 +360,10 @@
         }
       }
     }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!--------------------------------------------  Asteroid Class  -->
+
     function Asteroid(num) {
       this.image = document.getElementById('roid' + num);
       this.origin = { x: -10, y: -10 };
@@ -377,7 +388,10 @@
         ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
       }
     }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!-------------------------------------------  Spaceship Class  -->
+
     function Spaceship() {
       this.image = document.getElementById('spaceship');
       this.origin = { x: -25, y: -20 };
@@ -421,12 +435,32 @@
         ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
       }
     }
-// <!-------------------------------------------    User  Input    -->
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------------------  game clock  -->
+
+    function paintClock(ctx) {
+      ctx.fillStyle = "green";
+      ctx.font = "italic 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("elapsed: " + totalTime, 10, 20);
+    }
+
+    function calculateTime() {
+      var milliseconds = (new Date()) - startTime;
+      var minutes = Math.floor(milliseconds * 0.001 / 60);
+      var seconds = Math.floor(milliseconds * 0.001 % 60);
+      totalTime = minutes + "min, " + seconds + "sec";
+    }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------------------  User Input  -->
+
     function onKeyDown(event) {
       event.preventDefault();
       switch(event.keyCode) {
-        case 13: letsPlay();              return false;
-        case 81: endGame();              return false;
+        case 13: newGame();               return false;
+        case 81: endGame();               return false;
         case 32: spaceship.shoot();       return false;
         case 39: spaceship.veerRight();   return false;
         case 37: spaceship.veerLeft();    return false;
@@ -445,67 +479,24 @@
         case 'decel': spaceship.decelerate(); return false;
       }
     }
-// <!-----------------------------------  GameOver & game clock   -->
-    function endGame() {
-      stopAllAnimation();
-      soundTrack.stop();
-      GamePlay = false;
-      GameOver = true;
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!-------------------------------------------  Paint Utilities  -->
+
+    function asteroidQuery() {
+      var roidCount = 25;
+      if(/asteroids/.exec(window.location.search) != null){
+        roidCount = /asteroids=(\d+)/.exec(window.location.search)[1]
+      }
+      return roidCount;
     }
-    function gameOver(ctx) {
-      if(endTime == 'not set') endTime = totalTime;
-      ctx.restore();
-      ctx.fillStyle = "white";
-      ctx.textAlign = "center"
-      ctx.font = "bold 72pt Arial";
-      ctx.fillText("GAME OVER", 2%4*canvas.width/4, canvas.height/2);
-      ctx.font = "normal 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("Total Time: ",  2%5*canvas.width/5, canvas.height/2 + 30 );
-      ctx.fillText("Shots Fired: ", 2%5*canvas.width/5, canvas.height/2 + 60);
-      ctx.fillText("Total Kills: ", 2%5*canvas.width/5, canvas.height/2 + 90);
-      ctx.textAlign = "right";
-      ctx.fillText( endTime,        3%5*canvas.width/5, canvas.height/2 + 30 );
-      ctx.fillText( totalShots,     3%5*canvas.width/5, canvas.height/2 + 60);
-      ctx.fillText( totalKills,     3%5*canvas.width/5, canvas.height/2 + 90);
-      ctx.textAlign = "center"
-      ctx.font = "italic 24pt Arial";
-      ctx.fillStyle = "rgba(200,200,200,0.2)";
-      ctx.fillText( "Press Enter To Play Again",     2%4*canvas.width/4, canvas.height/2 + 140);
-    }
-    function paintClock(ctx) {
-      ctx.fillStyle = "green";
-      ctx.font = "italic 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("elapsed: " + totalTime, 10, 20);
-    }
-    function calculateTime() {
-      var milliseconds = (new Date()) - startTime;
-      var minutes = Math.floor(milliseconds * 0.001 / 60);
-      var seconds = Math.floor(milliseconds * 0.001 % 60);
-      totalTime = minutes + "min, " + seconds + "sec";
-    }
-    function instruct(ctx) {
-      ctx.textAlign = "center"
-      ctx.font = "italic 36pt Arial";
-      ctx.fillStyle = "rgba(200,200,200,0.2)";
-      ctx.fillText( "Press Enter To Play",     2%4*canvas.width/4, canvas.height/2);
-      ctx.font = "normal 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("Shoot: ",     2%5*canvas.width/5, canvas.height/2 + 30 );
-      ctx.fillText("Go: ",        2%5*canvas.width/5, canvas.height/2 + 60);
-      ctx.fillText("Turn: ",      2%5*canvas.width/5, canvas.height/2 + 90);
-      ctx.textAlign = "right";
-      ctx.fillText( "SpaceBar",   3%5*canvas.width/5, canvas.height/2 + 30 );
-      ctx.fillText( "Up/Down",    3%5*canvas.width/5, canvas.height/2 + 60);
-      ctx.fillText( "Left/Right", 3%5*canvas.width/5, canvas.height/2 + 90);
-    }
-// <!-----------------------------------  Application Loop & Logic  -->
-    function dontPaintTheDead(array) {
-      for(var i = array.length - 1; i >= 0; i--) {
-        if (array[i].gone) array.splice(i, 1);
+
+    function removeDead(deadObjects) {
+      for(var i = deadObjects.length - 1; i >= 0; i--) {
+        if (deadObjects[i].gone) deadObjects.splice(i, 1);
       }
     }
+
     function paintSky(ctx) {
       var now = Date.now();
       var dt = (now - lastTime) / 1000.0;
@@ -516,52 +507,129 @@
       }
       lastTime = now;
     }
-    function paintAll(ctx,painties) {
-      for (var i=0; i<painties.length; i++) {
+
+    function paintAll(ctx,objectArrays) {
+      for (var i=0; i<objectArrays.length; i++) {
         ctx.save();
-        painties[i].paint(ctx);
+        objectArrays[i].paint(ctx);
         ctx.restore();
       }
     }
+
     function playSounds() {
       for(var i = sounds.length - 1; i >=0; i--) {
         sounds[i].play();
         sounds.splice(i, 1);
       }
     }
-    function refresh() {
-      var ctx = canvas.getContext('2d'), pieces = [];
-      ctx.fillStyle = "rgb(0,0,0)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      paintSky(ctx);
-      if (GameOver) {
-        gameOver(ctx);
-      } else if (GamePlay) {
-        spaceship.paint(ctx);
-        ctx.restore();
-        calculateTime();
-        paintClock(ctx);
-        ctx.restore();
-        playSounds();
-        pieces[0] = asteroids;
-        pieces[1] = photons;
-        pieces[2] = explosions;
-        for(var i = 0; i < pieces.length; i++) {
-          paintAll(ctx,pieces[i]);
-          dontPaintTheDead(pieces[i]);
-        }
-        if (asteroids.length == 0) endGame();
-      } else {
-        instruct(ctx);
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------------------  Game State  -->
+
+    function game(ctx) {
+      var pieces = [];
+      spaceship.paint(ctx);
+      ctx.restore();
+      calculateTime();
+      paintClock(ctx);
+      ctx.restore();
+      playSounds();
+      pieces[0] = asteroids;
+      pieces[1] = photons;
+      pieces[2] = explosions;
+      for(var i = 0; i < pieces.length; i++) {
+        paintAll(ctx,pieces[i]);
+        removeDead(pieces[i]);
       }
+      if (asteroids.length == 0) endGame();
     }
+
+    function postGame(ctx) {
+      if(endTime == 'not set') endTime = totalTime;
+      var startX,endX,font;
+      if (canvas.width > 1080) {
+        font = "bold 72pt Arial";
+        startX = 2*(canvas.width/5);
+        endX = 3*(canvas.width/5);
+      } else {
+        font = "bold 52pt Arial";
+        startX = 2*(canvas.width/6);
+        endX = 4*(canvas.width/6);
+      }
+      ctx.restore();
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center"
+      ctx.font = font;
+      ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+      ctx.font = "normal 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("Total Time: ",  startX, canvas.height/2 + 30 );
+      ctx.fillText("Shots Fired: ", startX, canvas.height/2 + 60);
+      ctx.fillText("Total Kills: ", startX, canvas.height/2 + 90);
+      ctx.textAlign = "right";
+      ctx.fillText( endTime,        endX, canvas.height/2 + 30 );
+      ctx.fillText( totalShots,     endX, canvas.height/2 + 60);
+      ctx.fillText( totalKills,     endX, canvas.height/2 + 90);
+      ctx.textAlign = "center"
+      ctx.font = "italic 24pt Arial";
+      ctx.fillStyle = "rgba(200,200,200,0.2)";
+      ctx.fillText( "Press Enter To Play Again", canvas.width/2, canvas.height/2 + 140);
+    }
+
+    function preGame(ctx) {
+      var startX,endX,font;
+      if (canvas.width > 1080) {
+        font = "italic 48pt Arial";
+        startX = 2*(canvas.width/5);
+        endX = 3*(canvas.width/5);
+      } else {
+        font = "italic 36pt Arial";
+        startX = 2*(canvas.width/6);
+        endX = 4*(canvas.width/6);
+      }
+      ctx.textAlign = "center";
+      ctx.font = font;
+      ctx.fillStyle = "rgba(200,200,200,0.2)";
+      ctx.fillText( "Press Enter To Play", canvas.width/2, canvas.height/2);
+      ctx.font = "normal 16pt Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("Shoot: ",     startX, canvas.height/2 + 30 );
+      ctx.fillText("Go: ",        startX, canvas.height/2 + 60);
+      ctx.fillText("Turn: ",      startX, canvas.height/2 + 90);
+      ctx.textAlign = "right";
+      ctx.fillText( "SpaceBar",   endX, canvas.height/2 + 30 );
+      ctx.fillText( "Up/Down",    endX, canvas.height/2 + 60);
+      ctx.fillText( "Left/Right", endX, canvas.height/2 + 90);
+    }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!--------------------------------------------------  Run Loop  -->
+
     function main() {
       requestAnimFrame(main);
       refresh();
       _animatic_updateAll();
     }
-    function gameSetup() {
+
+    function refresh() {
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = "rgb(0,0,0)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      paintSky(ctx);
+      if (GameOver) {
+        postGame(ctx);
+      } else if (GamePlay) {
+        game(ctx)
+      } else {
+        preGame(ctx);
+      }
+    }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!---------------------------------  Setup & State Transitions  -->
+
+    function Setup() {
       lastTime = Date.now();
       endTime = 'not set';
       totalShots = 0;
@@ -571,6 +639,22 @@
         asteroids[i]  = new Asteroid(Math.floor(Math.random() * 5));
       }
     }
+
+    function endGame() {
+      stopAllAnimation();
+      soundTrack.stop();
+      GamePlay = false;
+      GameOver = true;
+    }
+
+    function newGame() {
+      startTime = Date.now();
+      sounds.push(soundTrack);
+      GamePlay = true;
+      GameOver = false;
+      Setup();
+    }
+
     function init() {
       canvas  = document.getElementById("game");
       canvas.width = window.innerWidth;
@@ -580,19 +664,18 @@
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
-      gameSetup();
+      Setup();
       main();
     }
-    function letsPlay() {
-      startTime = Date.now();
-      sounds.push(soundTrack);
-      GamePlay = true;
-      GameOver = false;
-      gameSetup();
-    }
+
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!------------------------------------  Global Event Listeners  -->
+
     window.addEventListener('load',init,true);
     window.addEventListener('keydown',onKeyDown,true);
     window.addEventListener('touchStart', touched,true);
+
   </script>
 </body>
 </html>
