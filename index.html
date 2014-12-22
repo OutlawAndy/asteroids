@@ -22,7 +22,7 @@
   <audio id="exploder" src="audio/explosion.mp3" preload="auto"></audio>
   <audio id="soundtrack" src="audio/soundtrack.mp3" preload="auto" loop="true"></audio>
   <canvas id="game">
-    Sorry, Your Browser does not support the Canvas Element
+    Sorry, This game requires a modern browser, like <a href="http://www.google.com/chrome">Chrome</a> &trade;
   </canvas>
   <script>
 // requestAnimationFrame Polyfill
@@ -37,216 +37,7 @@
               };
     })();
   </script>
-  <script>
-    /**
-     * Copyright (c) 2010 David Griffiths, http://code.google.com/p/animatic/
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining
-     * a copy of this software and associated documentation files (the
-     * "Software"), to deal in the Software without restriction, including
-     * without limitation the rights to use, copy, modify, merge, publish,
-     * distribute, sublicense, and/or sell copies of the Software, and to
-     * permit persons to whom the Software is furnished to do so, subject to
-     * the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be
-     * included in all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-     * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-     * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-     * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-     * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-     * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-     */
-    var _animatic_Objects = [], _animatic_Attributes = [];
-    function stopAllAnimation(){
-      _animatic_Objects = [];
-      _animatic_Attributes = [];
-    }
-    function _animatic_Sequencer() {}
-    function animate(obj, attrName, targetValue, howManySecs) {
-      var t = howManySecs || 0.25;
-      var seq = new _animatic_Sequencer();
-      if (obj[attrName] instanceof Array) {
-        for (var i = 0; i < obj[attrName].length; i++) {
-          var itemObject = new Object();
-          itemObject["_object"] = obj;
-          itemObject["_attr"] = "" + attrName;
-          itemObject["_item_" + i] = obj[attrName][i];
-          animatorFn = _animatic_runner(t, obj[attrName][i], targetValue[i], obj, attrName, seq);
-          _animatic_animateWithAnimator(itemObject, "_item_" + i, animatorFn);
-        }
-      } else {
-        animatorFn = _animatic_runner(t, obj[attrName], targetValue, obj, attrName, seq);
-        _animatic_animateWithAnimator(obj, attrName, animatorFn);
-      }
-      return seq;
-    }
-    function rotate(obj, attrName, rpm) {
-      animatorFn = _animatic_rotator(60.0 / rpm);
-      _animatic_animateWithAnimator(obj, attrName, animatorFn);
-    }
-    function drift(obj, heading, speedValue, wrapValue, maxXValue, maxYValue) {
-      var speed = speedValue || 100;
-      var maxX = maxXValue || window.innerWidth;
-      var maxY = maxYValue || window.innerHeight;
-      var wrap = wrapValue;
-      var attrNameY = "y";
-      var attrNameX = "x";
-      if (speedValue == 0) { return; }
-      if (wrap == null) { wrap = true; }
-      if (obj.top) { attrNameY = "top"; }
-      animatorFn = _animatic_drifterY(speed, obj[attrNameY], heading, wrap, maxY);
-      _animatic_animateWithAnimator(obj, attrNameY, animatorFn);
-      if (obj.left) { attrNameX = "left"; }
-      animatorFn = _animatic_drifterX(speed, obj[attrNameX], heading, wrap, maxX);
-      _animatic_animateWithAnimator(obj, attrNameX, animatorFn);
-    }
-    function stopAnimation(obj, attrNameValue) {
-      var attrName = attrNameValue || "";
-      for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
-        var o = _animatic_Objects[i];
-        var a = _animatic_Attributes[i];
-        if ((o == obj) && ((a == attrName) || (attrName = ""))) {
-          _animatic_Objects.splice(i, 1);
-          _animatic_Attributes.splice(i, 1);
-        }
-      }
-    }
-    function _animatic_animateWithAnimator(obj, attrName, animatorFn) {
-      obj["animatic_" + attrName] = animatorFn;
-      for (var i = _animatic_Objects.length - 1; i >= 0; i--) {
-        var o = _animatic_Objects[i];
-        var a = _animatic_Attributes[i];
-        if ((o == obj) && (a == attrName)) {
-          _animatic_Objects.splice(i, 1);
-          _animatic_Attributes.splice(i, 1);
-        }
-      }
-      _animatic_Objects.push(obj);
-      _animatic_Attributes.push(attrName);
-    }
-    function _animatic_updateAll() {
-      for (i in _animatic_Objects) {
-        var obj = _animatic_Objects[i];
-        var attrName = _animatic_Attributes[i];
-        var units = _animatic_unitsFor(obj[attrName]);
-        var newValue = obj["animatic_" + attrName]();
-        newValue = Math.round(newValue * 1000) / 1000;
-        if (attrName.match("^_item_")  == "_item_") {
-          var origObject = obj["_object"];
-          var origAttr = obj["_attr"];
-          var origIndex = eval(attrName.substring(6));
-          origObject[origAttr][eval(origIndex)] = _animatic_addUnitsTo("" + newValue, units);
-        } else {
-          obj[attrName] = _animatic_addUnitsTo("" + newValue, units);
-        }
-      }
-    }
-    function _animatic_stripUnits(s) {
-      return ("" + s).replace( /[a-z%]/ig, "");
-    }
-    function _animatic_unitsFor(s) {
-      return ("" + s).replace( /[0-9.-]+/ig, "?");
-    }
-    function _animatic_addUnitsTo(s, u) {
-      if (u == "?") { return eval(s); }
-      if (u.match(/\?.+\?/)) {
-        throw "Animatic cannot animate an attribute with multiple parameters: '" + u + "'";
-      }
-      return u.replace( /\?/ig, "" + s);
-    }
-    function _animatic_now() { return (new Date()).valueOf(); }
-    function _animatic_runner(p, fromValue, toValue, obj, attrName, seq) {
-      var v1 = eval(_animatic_stripUnits(fromValue + ""));
-      var v2 = eval(_animatic_stripUnits(toValue + ""));
-      var now = _animatic_now();
-      var then = now + (p * 1000);
-      var seqRun = false;
-      function counterClosure() {
-        var justNow = _animatic_now();
-        if (justNow >= then) {
-          stopAnimation(obj, attrName);
-          if (!seqRun) {
-            seqRun = true;
-            if (seq.next) { seq.next(); }
-          }
-          return v2;
-        }
-        var prop = (justNow - now) / (then - now);
-        var currently = v1 + (Math.sin(prop * Math.PI / 2) * (v2 - v1));
-        return currently;
-      }
-      return counterClosure;
-    }
-    function _animatic_drifterX(speedValue, startXValue, headingValue, wrap, maxXValue) {
-      var speed = speedValue;
-      var startX = eval(_animatic_stripUnits(startXValue + ""));
-      var heading = eval(_animatic_stripUnits(headingValue + ""));
-      var maxX = eval(_animatic_stripUnits(maxXValue + ""));
-      var now = _animatic_now();
-      function counterClosure() {
-        var justNow = _animatic_now();
-        var diff = (justNow - now);
-        var cx = startX + diff * speed * Math.sin(heading * Math.PI / 180.0) / 1000;
-        if (wrap) {
-          while (cx < 0) { cx = cx + maxX; }
-          if (cx > maxX) { cx = cx % maxX; }
-        }
-        return cx;
-      }
-      return counterClosure;
-    }
-    function _animatic_drifterY(speedValue, startYValue, headingValue, wrap, maxYValue) {
-      var speed = speedValue;
-      var startY = eval(_animatic_stripUnits(startYValue + ""));
-      var heading = eval(_animatic_stripUnits(headingValue + ""));
-      var maxY = eval(_animatic_stripUnits(maxYValue + ""));
-      var now = _animatic_now();
-      function counterClosure() {
-        var justNow = _animatic_now();
-        var diff = (justNow - now);
-        var cy = startY - diff * speed * Math.cos(heading * Math.PI / 180.0) / 1000;
-        if (wrap) {
-          while (cy < 0) { cy = cy + maxY; }
-          if (cy > maxY) {
-            cy = cy % maxY;
-            now = now + ((maxYValue - startY) / speed);
-          }
-        }
-        return cy;
-      }
-      return counterClosure;
-    }
-    function pulser(obj,attrName,p) {
-      animatorFn = _animatic_springer(p, 0.2, 1);
-      _animatic_animateWithAnimator(obj, attrName, animatorFn)
-    }
-    function _animatic_rotator(p) {
-      var now = _animatic_now();
-      var then = now + (Math.abs(p) * 1000);
-      var sign = (p < 0) ? -1 : 1;
-      function counterClosure() {
-        var justNow = _animatic_now();
-        if (justNow >= then) {
-          now = justNow;
-          then = now + (Math.abs(p) * 1000);
-        }
-        var prop = (justNow - now) / (then - now);
-        return sign * prop * 360.0;
-      }
-      return counterClosure;
-    }
-    function _animatic_springer(p, min, scale) {
-      var f = _animatic_rotator(p);
-      function counterClosure() {
-        return scale * (Math.sin(f() * Math.PI / 180.0) + min);
-      }
-      return counterClosure;
-    }
-  </script>
+  <script src="scripts/animatic.js"></script>
   <script>
     /**
      * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
@@ -275,9 +66,9 @@
       this.y = Math.random()*canvas.height;
       this.radius = Math.random();
       this.color = "#eafbff";
+      this.speed = this.radius*250
+      drift(this, 180, this.speed)
       this.paint = function(ctx,dt) {
-        this.y += (this.radius*250) * dt;
-        if(this.y > canvas.height) { this.y = 0; }
         ctx.beginPath();
         ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
         ctx.closePath();
@@ -393,6 +184,7 @@
 // <!-------------------------------------------  Spaceship Class  -->
 
     function Spaceship() {
+      // this.soundCount = 0;
       this.image = document.getElementById('spaceship');
       this.origin = { x: -25, y: -20 };
       this.size = { width: 50, height: 40 };
@@ -481,7 +273,7 @@
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!-------------------------------------------  Paint Utilities  -->
+// <!-------------------------------------------------  Utilities  -->
 
     function asteroidQuery() {
       var roidCount = 25;
@@ -641,7 +433,7 @@
     }
 
     function endGame() {
-      stopAllAnimation();
+      // stopAllAnimation();
       soundTrack.stop();
       GamePlay = false;
       GameOver = true;
@@ -664,6 +456,7 @@
       for (var i=0; i<starsInTheSky; i++){
         stars[i] = new Star();
       }
+      _animatic_always_animate = stars;
       Setup();
       main();
     }
@@ -672,9 +465,9 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------  Global Event Listeners  -->
 
-    window.addEventListener('load',init,true);
-    window.addEventListener('keydown',onKeyDown,true);
-    window.addEventListener('touchStart', touched,true);
+    window.addEventListener('load',     init,      true);
+    window.addEventListener('keydown',  onKeyDown, true);
+    window.addEventListener('touchStart', touched, true);
 
   </script>
 </body>
