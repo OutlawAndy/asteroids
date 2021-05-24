@@ -53,29 +53,13 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------  Global Namespace  -->
 
-    var canvas, spaceship, startTime, totalTime, sounds = [], GamePlay = false,
-        asteroidTotal = asteroidQuery(), starsInTheSky = 200, GameOver = false,
-        asteroids = [], photons = [], explosions = [], stars = [],
-        endTime, totalShots, totalKills, soundTrack, lastTime;
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------------------  Star Class  -->
-
-    function Star() {
-      this.x = Math.random()*canvas.width;
-      this.y = Math.random()*canvas.height;
-      this.radius = Math.random();
-      this.color = "#eafbff";
-      this.speed = this.radius*250
-      drift(this, 180, this.speed)
-      this.paint = function(ctx,dt) {
-        ctx.beginPath();
-        ctx.arc(this.x,this.y, this.radius, 0, Math.PI*2);
-        ctx.closePath();
-        ctx.fillStyle = this.color;
-        ctx.fill();
-      }
-    }
+    var   canvas, spaceship, soundTrack,
+          _startTime, _totalTime, _shots, _kills;
+    
+    var   _gameOver = false, _gameOn = false;
+    
+    const sounds = [], rocks = [], photons = [],
+          explosions = [], _rocksCount = rocksQuery(25)
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!---------------------------------------  Sound Effects Class  -->
@@ -128,7 +112,7 @@
       drift(this, this.heading, this.speed, false);
       this.paint = function(ctx) {
         this.gone = ((this.x < 0) || (this.x > canvas.width) || (this.y < 0) || (this.y > canvas.height));
-        if(this.gone) { stopAnimation(this); return; }
+        if (this.gone) { stopAnimation(this); return; }
         ctx.translate(this.x, this.y);
         ctx.rotate(this.heading * Math.PI / 180);
         ctx.strokeStyle = "rgb(221, 255, 0)";
@@ -140,12 +124,12 @@
         }
         ctx.closePath();
         ctx.stroke();
-        for(var i = 0; i <asteroids.length; i++) {
-          if(asteroids[i].isHitBy(this.x,this.y)) {
-            totalKills++;
+        for (var i = 0; i <rocks.length; i++) {
+          if (rocks[i].isHitBy(this.x,this.y)) {
+            _kills++;
             this.gone = true;
-            asteroids[i].gone = true;
-            explosions.push(new Explosion(asteroids[i].x, asteroids[i].y, this.heading));
+            rocks[i].gone = true;
+            explosions.push(new Explosion(rocks[i].x, rocks[i].y, this.heading));
             sounds.push(new Sound('exploder'));
           }
         }
@@ -184,7 +168,6 @@
 // <!-------------------------------------------  Spaceship Class  -->
 
     function Spaceship() {
-      // this.soundCount = 0;
       this.image = document.getElementById('spaceship');
       this.origin = { x: -25, y: -20 };
       this.size = { width: 50, height: 40 };
@@ -200,19 +183,19 @@
         this.drift();
       }
       this.accelerate = function() {
-        if(this.speed > 600) return;
         this.speed += 60;
+        if (this.speed > 500) this.speed = 500;
         this.drift();
       }
       this.decelerate = function() {
         this.speed -= 60;
-        if(this.speed < 0) this.speed = 0.1;
+        if (this.speed < 0) this.speed = 0;
         this.drift();
       }
       this.shoot = function() {
         photons.push(new Photon(this.x, this.y, this.heading));
         sounds.push(new Sound('lazer'));
-        totalShots++;
+        _shots++;
       }
       this.reset = function() {
         this.x = canvas.width/2;
@@ -235,14 +218,14 @@
       ctx.fillStyle = "green";
       ctx.font = "italic 16pt Arial";
       ctx.textAlign = "left";
-      ctx.fillText("elapsed: " + totalTime, 10, 20);
+      ctx.fillText("elapsed: " + _totalTime, 10, 20);
     }
 
     function calculateTime() {
-      var milliseconds = (new Date()) - startTime;
+      var milliseconds = new Date() - _startTime;
       var minutes = Math.floor(milliseconds * 0.001 / 60);
       var seconds = Math.floor(milliseconds * 0.001 % 60);
-      totalTime = minutes + "min, " + seconds + "sec";
+      _totalTime = minutes + "min, " + seconds + "sec";
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
@@ -250,7 +233,7 @@
 
     function onKeyDown(event) {
       event.preventDefault();
-      switch(event.keyCode) {
+      switch (event.keyCode) {
         case 13: newGame();               return false;
         case 81: endGame();               return false;
         case 32: spaceship.shoot();       return false;
@@ -263,7 +246,7 @@
     // <div data-action="shoot">Fire!</div>
     function touched(event) {
       event.preventDefault();
-      switch(event.target.dataset["action"]) {
+      switch (event.target.dataset.action) {
         case 'shoot': spaceship.shoot();      return false;
         case 'right': spaceship.veerRight();  return false;
         case 'left' : spaceship.veerLeft();   return false;
@@ -275,33 +258,22 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!-------------------------------------------------  Utilities  -->
 
-    function asteroidQuery() {
-      var roidCount = 25;
-      if(/asteroids/.exec(window.location.search) != null){
-        roidCount = /asteroids=(\d+)/.exec(window.location.search)[1]
+    function rocksQuery(_default) {
+      if (/rocks/.exec(window.location.search) !== null) {
+        return /rocks=(\d+)/.exec(window.location.search)[1];
+      } else {
+        return _default;
       }
-      return roidCount;
     }
 
     function removeDead(deadObjects) {
-      for(var i = deadObjects.length - 1; i >= 0; i--) {
+      for (var i = deadObjects.length - 1; i >= 0; i--) {
         if (deadObjects[i].gone) deadObjects.splice(i, 1);
       }
     }
 
-    function paintSky(ctx) {
-      var now = Date.now();
-      var dt = (now - lastTime) / 1000.0;
-      for (var i=0; i<stars.length; i++) {
-        ctx.save();
-        stars[i].paint(ctx,dt);
-        ctx.restore();
-      }
-      lastTime = now;
-    }
-
     function paintAll(ctx,objectArrays) {
-      for (var i=0; i<objectArrays.length; i++) {
+      for (var i=0; i < objectArrays.length; i++) {
         ctx.save();
         objectArrays[i].paint(ctx);
         ctx.restore();
@@ -309,7 +281,7 @@
     }
 
     function playSounds() {
-      for(var i = sounds.length - 1; i >=0; i--) {
+      for (var i = sounds.length - 1; i >= 0; i--) {
         sounds[i].play();
         sounds.splice(i, 1);
       }
@@ -326,18 +298,17 @@
       paintClock(ctx);
       ctx.restore();
       playSounds();
-      pieces[0] = asteroids;
-      pieces[1] = photons;
-      pieces[2] = explosions;
-      for(var i = 0; i < pieces.length; i++) {
+      pieces.push(rocks);
+      pieces.push(photons);
+      pieces.push(explosions);
+      for (var i = 0; i < pieces.length; i++) {
         paintAll(ctx,pieces[i]);
         removeDead(pieces[i]);
       }
-      if (asteroids.length == 0) endGame();
+      if (rocks.length === 0) endGame();
     }
 
     function postGame(ctx) {
-      if(endTime == 'not set') endTime = totalTime;
       var startX,endX,font;
       if (canvas.width > 1080) {
         font = "bold 72pt Arial";
@@ -355,13 +326,13 @@
       ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
       ctx.font = "normal 16pt Arial";
       ctx.textAlign = "left";
-      ctx.fillText("Total Time: ",  startX, canvas.height/2 + 30 );
+      ctx.fillText("Time: ",        startX, canvas.height/2 + 30);
       ctx.fillText("Shots Fired: ", startX, canvas.height/2 + 60);
-      ctx.fillText("Total Kills: ", startX, canvas.height/2 + 90);
+      ctx.fillText("Space Rocks: ", startX, canvas.height/2 + 90);
       ctx.textAlign = "right";
-      ctx.fillText( endTime,        endX, canvas.height/2 + 30 );
-      ctx.fillText( totalShots,     endX, canvas.height/2 + 60);
-      ctx.fillText( totalKills,     endX, canvas.height/2 + 90);
+      ctx.fillText( _totalTime, endX, canvas.height/2 + 30);
+      ctx.fillText( _shots,     endX, canvas.height/2 + 60);
+      ctx.fillText( _kills,     endX, canvas.height/2 + 90);
       ctx.textAlign = "center"
       ctx.font = "italic 24pt Arial";
       ctx.fillStyle = "rgba(200,200,200,0.2)";
@@ -408,10 +379,9 @@
       ctx.fillStyle = "rgb(0,0,0)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      paintSky(ctx);
-      if (GameOver) {
+      if (_gameOver) {
         postGame(ctx);
-      } else if (GamePlay) {
+      } else if (_gameOn) {
         game(ctx)
       } else {
         preGame(ctx);
@@ -419,45 +389,38 @@
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!---------------------------------  Setup & State Transitions  -->
+// <!---------------------------------  gameSetup & State Transitions  -->
 
-    function Setup() {
-      lastTime = Date.now();
-      endTime = 'not set';
-      totalShots = 0;
-      totalKills = 0;
+    function gameSetup() {
+      _shots = 0;
+      _kills = 0;
       spaceship.reset();
-      for (var i=0; i<asteroidTotal; i++) {
-        asteroids[i]  = new Asteroid(Math.floor(Math.random() * 5));
+      for (var i=0; i < _rocksCount; i++) {
+        rocks[i] = new Asteroid(Math.floor(Math.random() * 5));
       }
     }
 
     function endGame() {
-      // stopAllAnimation();
+      _gameOn = false;
+      _gameOver = true;
       soundTrack.stop();
-      GamePlay = false;
-      GameOver = true;
     }
 
     function newGame() {
-      startTime = Date.now();
+      _startTime = Date.now();
+      _gameOn = true;
+      _gameOver = false;
       sounds.push(soundTrack);
-      GamePlay = true;
-      GameOver = false;
-      Setup();
+      gameSetup();
     }
 
     function init() {
-      canvas  = document.getElementById("game");
+      canvas = document.getElementById("game");
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       soundTrack = new Sound('soundtrack');
       spaceship = new Spaceship();
-      for (var i=0; i<starsInTheSky; i++){
-        stars[i] = new Star();
-      }
-      _animatic_always_animate = stars;
-      Setup();
+      gameSetup();
       main();
     }
 
@@ -465,8 +428,8 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------  Global Event Listeners  -->
 
-    window.addEventListener('load',     init,      true);
-    window.addEventListener('keydown',  onKeyDown, true);
+    window.addEventListener('load', init, true);
+    window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('touchStart', touched, true);
 
   </script>
