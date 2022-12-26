@@ -53,13 +53,19 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------  Global Namespace  -->
 
-    var   canvas, spaceship, soundTrack,
-          _startTime, _totalTime, _shots, _kills;
-    
-    var   _gameOver = false, _gameOn = false;
-    
-    const sounds = [], rocks = [], photons = [],
-          explosions = [], _rocksCount = rocksQuery(25)
+    var   canvas, spaceship, soundTrack, __MODE__ = 'ready';
+    const sounds = [], rocks = [], photons = [], explosions = [], stats = {
+      start: null,
+      time: null,
+      shots: 0,
+      kills: 0,
+      reset: function() {
+        this.start = Date.now();
+        this.time = null;
+        this.shots = 0;
+        this.kills = 0;
+      }
+    }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!---------------------------------------  Sound Effects Class  -->
@@ -126,7 +132,7 @@
         ctx.stroke();
         for (var i = 0; i <rocks.length; i++) {
           if (rocks[i].isHitBy(this.x,this.y)) {
-            _kills++;
+            stats.kills++;
             this.gone = true;
             rocks[i].gone = true;
             explosions.push(new Explosion(rocks[i].x, rocks[i].y, this.heading));
@@ -169,8 +175,13 @@
 
     function Spaceship() {
       this.image = document.getElementById('spaceship');
-      this.origin = { x: -25, y: -20 };
       this.size = { width: 50, height: 40 };
+      this.origin = { x: -25, y: -20 }; // x: width/2, y: height/2
+      this.speed = 0;
+      this.heading = 0;
+      this.x = canvas.width/2;
+      this.y = canvas.height/2;
+
       this.drift = function() {
         drift(this, this.heading, this.speed);
       }
@@ -195,14 +206,7 @@
       this.shoot = function() {
         photons.push(new Photon(this.x, this.y, this.heading));
         sounds.push(new Sound('lazer'));
-        _shots++;
-      }
-      this.reset = function() {
-        this.x = canvas.width/2;
-        this.y = canvas.height/2;
-        this.heading = 0;
-        this.speed = 0;
-        this.drift();
+        stats.shots++;
       }
       this.paint = function(ctx) {
         ctx.translate(this.x, this.y);
@@ -218,51 +222,71 @@
       ctx.fillStyle = "green";
       ctx.font = "italic 16pt Arial";
       ctx.textAlign = "left";
-      ctx.fillText("elapsed: " + _totalTime, 10, 20);
+      ctx.fillText("elapsed: " + stats.time, 10, 20);
     }
 
     function calculateTime() {
-      var milliseconds = new Date() - _startTime;
+      var milliseconds = new Date() - stats.start;
       var minutes = Math.floor(milliseconds * 0.001 / 60);
       var seconds = Math.floor(milliseconds * 0.001 % 60);
-      _totalTime = minutes + "min, " + seconds + "sec";
+      stats.time = minutes + "min, " + seconds + "sec";
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------------  User Input  -->
 
-    function onKeyDown(event) {
-      event.preventDefault();
-      switch (event.keyCode) {
-        case 13: newGame();               return false;
-        case 81: endGame();               return false;
-        case 32: spaceship.shoot();       return false;
-        case 39: spaceship.veerRight();   return false;
-        case 37: spaceship.veerLeft();    return false;
-        case 38: spaceship.accelerate();  return false;
-        case 40: spaceship.decelerate();  return false;
+    function perform(event) {
+      event.preventDefault()
+      const {key, target} = event
+      // keyboard or on-screen button, like: <div data-action="shoot">Fire!</div>
+      const action = key ? keyMap[__MODE__][key] : target.dataset.action
+
+      switch (action) {
+        case 'start': newGame();              break;
+        case 'quit' : endGame();              break;
+        case 'shoot': spaceship.shoot();      break;
+        case 'right': spaceship.veerRight();  break;
+        case 'left' : spaceship.veerLeft();   break;
+        case 'accel': spaceship.accelerate(); break;
+        case 'decel': spaceship.decelerate(); break;
+        case 'help' :/*add modal help page*/; break;
       }
     }
-    // <div data-action="shoot">Fire!</div>
-    function touched(event) {
-      event.preventDefault();
-      switch (event.target.dataset.action) {
-        case 'shoot': spaceship.shoot();      return false;
-        case 'right': spaceship.veerRight();  return false;
-        case 'left' : spaceship.veerLeft();   return false;
-        case 'accel': spaceship.accelerate(); return false;
-        case 'decel': spaceship.decelerate(); return false;
-      }
+
+    const keyMap = {
+      ready: {
+        'Enter'       : 'start',
+        '/'           : 'help',
+      },
+      gameOver: {
+        'Enter'       : 'start',
+        '/'           : 'help',
+      },
+      gameOn: {
+        ' '           : 'shoot',
+        'f'           : 'shoot',
+        'ArrowLeft'   : 'left',
+        'h'           : 'left',
+        'ArrowUp'     : 'accel',
+        'j'           : 'accel',
+        'ArrowDown'   : 'decel',
+        'k'           : 'decel',
+        'ArrowRight'  : 'right',
+        'l'           : 'right',
+        'q'           : 'quit',
+        '/'           : 'help',
+      },
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!-------------------------------------------------  Utilities  -->
 
-    function rocksQuery(_default) {
-      if (/rocks/.exec(window.location.search) !== null) {
-        return /rocks=(\d+)/.exec(window.location.search)[1];
+    function rocksQuery(defaultCount) {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('rocks')) {
+        return parseInt(params.get('rocks'));
       } else {
-        return _default;
+        return defaultCount;
       }
     }
 
@@ -291,16 +315,13 @@
 // <!------------------------------------------------  Game State  -->
 
     function game(ctx) {
-      var pieces = [];
+      const pieces = [rocks, photons, explosions];
       spaceship.paint(ctx);
       ctx.restore();
       calculateTime();
       paintClock(ctx);
       ctx.restore();
       playSounds();
-      pieces.push(rocks);
-      pieces.push(photons);
-      pieces.push(explosions);
       for (var i = 0; i < pieces.length; i++) {
         paintAll(ctx,pieces[i]);
         removeDead(pieces[i]);
@@ -309,7 +330,7 @@
     }
 
     function postGame(ctx) {
-      var startX,endX,font;
+      let startX,endX,font;
       if (canvas.width > 1080) {
         font = "bold 72pt Arial";
         startX = 2*(canvas.width/5);
@@ -330,9 +351,9 @@
       ctx.fillText("Shots Fired: ", startX, canvas.height/2 + 60);
       ctx.fillText("Space Rocks: ", startX, canvas.height/2 + 90);
       ctx.textAlign = "right";
-      ctx.fillText( _totalTime, endX, canvas.height/2 + 30);
-      ctx.fillText( _shots,     endX, canvas.height/2 + 60);
-      ctx.fillText( _kills,     endX, canvas.height/2 + 90);
+      ctx.fillText( stats.time, endX, canvas.height/2 + 30);
+      ctx.fillText( stats.shots,     endX, canvas.height/2 + 60);
+      ctx.fillText( stats.kills,     endX, canvas.height/2 + 90);
       ctx.textAlign = "center"
       ctx.font = "italic 24pt Arial";
       ctx.fillStyle = "rgba(200,200,200,0.2)";
@@ -379,38 +400,37 @@
       ctx.fillStyle = "rgb(0,0,0)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      if (_gameOver) {
-        postGame(ctx);
-      } else if (_gameOn) {
-        game(ctx)
-      } else {
-        preGame(ctx);
-      }
+      play[__MODE__](ctx)
+    }
+
+    const play = {
+      'ready'   : preGame,
+      'gameOn'  : game,
+      'gameOver': postGame
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!---------------------------------  gameSetup & State Transitions  -->
 
     function gameSetup() {
-      _shots = 0;
-      _kills = 0;
-      spaceship.reset();
-      for (var i=0; i < _rocksCount; i++) {
-        rocks[i] = new Asteroid(Math.floor(Math.random() * 5));
+      soundTrack = new Sound('soundtrack');
+      spaceship = new Spaceship();
+
+      stats.reset();
+      sounds.push(soundTrack);
+
+      for (var i=0; i < rocksQuery(25); i++) {
+        rocks[i] = new Asteroid(Math.floor(Math.random() * 7));
       }
     }
 
     function endGame() {
-      _gameOn = false;
-      _gameOver = true;
+      __MODE__ = 'gameOver';
       soundTrack.stop();
     }
 
     function newGame() {
-      _startTime = Date.now();
-      _gameOn = true;
-      _gameOver = false;
-      sounds.push(soundTrack);
+      __MODE__ = 'gameOn';
       gameSetup();
     }
 
@@ -418,8 +438,7 @@
       canvas = document.getElementById("game");
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      soundTrack = new Sound('soundtrack');
-      spaceship = new Spaceship();
+
       gameSetup();
       main();
     }
@@ -429,8 +448,8 @@
 // <!------------------------------------  Global Event Listeners  -->
 
     window.addEventListener('load', init, true);
-    window.addEventListener('keydown', onKeyDown, true);
-    window.addEventListener('touchStart', touched, true);
+    window.addEventListener('keydown', perform, true);
+    window.addEventListener('click', perform, true);
 
   </script>
 </body>
