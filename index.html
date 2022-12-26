@@ -175,8 +175,13 @@
 
     function Spaceship() {
       this.image = document.getElementById('spaceship');
-      this.origin = { x: -25, y: -20 };
       this.size = { width: 50, height: 40 };
+      this.origin = { x: -25, y: -20 }; // x: width/2, y: height/2
+      this.speed = 0;
+      this.heading = 0;
+      this.x = canvas.width/2;
+      this.y = canvas.height/2;
+
       this.drift = function() {
         drift(this, this.heading, this.speed);
       }
@@ -202,15 +207,6 @@
         photons.push(new Photon(this.x, this.y, this.heading));
         sounds.push(new Sound('lazer'));
         stats.shots++;
-      }
-      this.reset = function() {
-        this.x = canvas.width/2;
-        this.y = canvas.height/2;
-        this.heading = 0;
-        this.speed = 0;
-        // stopAnimation(this, 'top');
-        // stopAnimation(this, 'left');
-        this.drift();
       }
       this.paint = function(ctx) {
         ctx.translate(this.x, this.y);
@@ -410,7 +406,6 @@
       spaceship = new Spaceship();
 
       stats.reset();
-      spaceship.reset();
       sounds.push(soundTrack);
 
       for (var i=0; i < rocksQuery(25); i++) {
