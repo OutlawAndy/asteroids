@@ -238,8 +238,10 @@
     function perform(event) {
       event.preventDefault()
       const {key, target} = event
+      // keyboard or on-screen button, like: <div data-action="shoot">Fire!</div>
+      const action = key ? keyMap[__MODE__][key] : target.dataset.action
 
-      switch (keyMap[key] || target.dataset.action) {
+      switch (action) {
         case 'start': newGame();              break;
         case 'quit' : endGame();              break;
         case 'shoot': spaceship.shoot();      break;
@@ -252,19 +254,28 @@
     }
 
     const keyMap = {
-      ' '           : 'shoot',
-      'f'           : 'shoot',
-      'ArrowLeft'   : 'left',
-      'h'           : 'left',
-      'ArrowUp'     : 'accel',
-      'j'           : 'accel',
-      'ArrowDown'   : 'decel',
-      'k'           : 'decel',
-      'ArrowRight'  : 'right',
-      'l'           : 'right',
-      'Enter'       : 'start',
-      'q'           : 'quit',
-      '/'           : 'help',
+      ready: {
+        'Enter'       : 'start',
+        '/'           : 'help',
+      },
+      gameOver: {
+        'Enter'       : 'start',
+        '/'           : 'help',
+      },
+      gameOn: {
+        ' '           : 'shoot',
+        'f'           : 'shoot',
+        'ArrowLeft'   : 'left',
+        'h'           : 'left',
+        'ArrowUp'     : 'accel',
+        'j'           : 'accel',
+        'ArrowDown'   : 'decel',
+        'k'           : 'decel',
+        'ArrowRight'  : 'right',
+        'l'           : 'right',
+        'q'           : 'quit',
+        '/'           : 'help',
+      },
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
