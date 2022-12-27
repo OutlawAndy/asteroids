@@ -1,3 +1,16 @@
+<!--
+  /**
+  * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining
+  * a copy of this software and associated documentation files (the
+  * "Software"), to deal in the Software without restriction, including
+  * without limitation the rights to use, copy, modify, merge, publish,
+  * distribute, sublicense, and/or sell copies of the Software, and to
+  * permit persons to whom the Software is furnished to do so
+  **/
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +38,8 @@
     Sorry, This game requires a modern browser, like <a href="http://www.google.com/chrome">Chrome</a> &trade;
   </canvas>
   <script>
-// requestAnimationFrame Polyfill
+    // TODO: is this still needed?
+    // requestAnimationFrame Polyfill
     window.requestAnimFrame = (function(){
       return  window.requestAnimationFrame ||
               window.webkitRequestAnimationFrame ||
@@ -37,18 +51,11 @@
               };
     })();
   </script>
-  <script src="scripts/animatic.js"></script>
-  <script>
-    /**
-     * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining
-     * a copy of this software and associated documentation files (the
-     * "Software"), to deal in the Software without restriction, including
-     * without limitation the rights to use, copy, modify, merge, publish,
-     * distribute, sublicense, and/or sell copies of the Software, and to
-     * permit persons to whom the Software is furnished to do so
-    **/
+
+  <script type="module">
+    import {drift, rotate} from "./modules/animation.js"
+    import Sound from "./modules/Sound.js"
+    import Explosion from "./modules/Explosion.js"
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------  Global Namespace  -->
@@ -68,45 +75,6 @@
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!---------------------------------------  Sound Effects Class  -->
-
-    function Sound(fx) {
-      this.media = document.getElementById(fx);
-      this.play = function() {
-        this.media.play();
-      }
-      this.stop = function() {
-        this.media.pause();
-        this.media.currentTime = 0;
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!-------------------------------------------  Explosion Class  -->
-
-    function Explosion(x,y,heading) {
-      this.image = document.getElementById('explosion');
-      this.size = { width: 0, height: 0 };
-      this.origin = { x: -(this.size.width/2), y: -(this.size.height/2) };
-      this.heading = heading;
-      this.x = x;
-      this.y = y;
-      this.gone = false;
-      this.paint = function(ctx) {
-        this.size.width += 10;
-        this.size.height += 10;
-        if (this.size.width == 60) {
-          this.gone = true;
-        } else {
-          ctx.globalAlpha = (100 / (this.size.width/2) * 0.1)
-          ctx.translate(this.x, this.y);
-          ctx.rotate((this.heading * Math.PI / 180) - 90);
-          ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
-        }
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!----------------------------------------------  Photon Class  -->
 
     function Photon(x,y,heading) {
@@ -115,10 +83,12 @@
       this.heading = heading;
       this.speed = 1000;
       this.gone = false;
-      drift(this, this.heading, this.speed, false);
-      this.paint = function(ctx) {
-        this.gone = ((this.x < 0) || (this.x > canvas.width) || (this.y < 0) || (this.y > canvas.height));
-        if (this.gone) { stopAnimation(this); return; }
+      this.wrap = false;
+      this.drift = drift(this)
+
+      this.paint = ctx => {
+        this.drift()
+
         ctx.translate(this.x, this.y);
         ctx.rotate(this.heading * Math.PI / 180);
         ctx.strokeStyle = "rgb(221, 255, 0)";
@@ -146,27 +116,29 @@
 // <!--------------------------------------------  Asteroid Class  -->
 
     function Asteroid(num) {
-      this.image = document.getElementById('roid' + num);
-      this.origin = { x: -10, y: -10 };
-      this.size = { width: 20, height: 20 };
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.heading = Math.random() * 360;
-      this.tilt = 0;
-      this.speed = Math.random() * 60;
-      drift(this, this.heading, this.speed);
-      rotate(this, "tilt", Math.random() * 60 - 30);
-      this.isHitBy = function(x,y) {
-        var xDistance = (x - this.x);
-        var yDistance = (y - this.y);
-        if(xDistance < 0) xDistance = -xDistance;
-        if(yDistance < 0) yDistance = -yDistance;
-        return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3));
+      this.image = document.getElementById('roid' + num)
+      this.origin = { x: -10, y: -10 }
+      this.size = { width: 20, height: 20 }
+      this.x = Math.random() * canvas.width
+      this.y = Math.random() * canvas.height
+      this.heading = Math.random() * 360
+      this.tilt = 0
+      this.speed = Math.random() * 60
+      this.rpm = Math.random() * 60 - 30
+      this.wrap = true
+      this.drift = drift(this)
+      this.rotate = rotate(this)
+      this.isHitBy = (x,y) => {
+        var xDistance = Math.abs(x - this.x)
+        var yDistance = Math.abs(y - this.y)
+        return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3))
       }
-      this.paint = function(ctx) {
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.tilt * Math.PI / 180);
-        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
+      this.paint = ctx => {
+        this.drift()
+        this.rotate()
+        ctx.translate(this.x, this.y)
+        ctx.rotate(this.tilt * Math.PI / 180)
+        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height)
       }
     }
 
@@ -181,34 +153,26 @@
       this.heading = 0;
       this.x = canvas.width/2;
       this.y = canvas.height/2;
+      this.wrap = true
+      this.drift = drift(this)
 
-      this.drift = function() {
-        drift(this, this.heading, this.speed);
+      this.veerLeft = () => this.heading -= 10
+      this.veerRight = () => this.heading += 10
+      this.accelerate = () => {
+        this.speed += 60
+        if (500 <= this.speed) this.speed = 500
       }
-      this.veerLeft = function() {
-        this.heading -= 10;
-        this.drift();
-      }
-      this.veerRight = function () {
-        this.heading += 10;
-        this.drift();
-      }
-      this.accelerate = function() {
-        this.speed += 60;
-        if (this.speed > 500) this.speed = 500;
-        this.drift();
-      }
-      this.decelerate = function() {
+      this.decelerate = () => {
         this.speed -= 60;
-        if (this.speed < 0) this.speed = 0;
-        this.drift();
+        if (this.speed <= 0) this.speed = 0;
       }
-      this.shoot = function() {
+      this.shoot = () => {
         photons.push(new Photon(this.x, this.y, this.heading));
         sounds.push(new Sound('lazer'));
         stats.shots++;
       }
-      this.paint = function(ctx) {
+      this.paint = ctx => {
+        this.drift()
         ctx.translate(this.x, this.y);
         ctx.rotate((this.heading) * Math.PI / 180);
         ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
@@ -392,7 +356,7 @@
     function main() {
       requestAnimFrame(main);
       refresh();
-      _animatic_updateAll();
+      // _animatic_updateAll();
     }
 
     function refresh() {
