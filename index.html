@@ -18,19 +18,36 @@
   <meta name="viewport" content="width=device-width, initial-scale = 1" media="screen" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>astroids</title>
-  <style>body{margin:0 !important;}</style>
+  <style>
+    body {
+      margin:0 !important;
+    }
+    img {
+      width: 20px;
+      height: 20px;
+      display: none;
+    }
+    img#explosion {
+      width: 40px;
+      height: 40px;
+    }
+    img#spaceship {
+      width: 50px;
+      height: 40px;
+    }
+  </style>
 </head>
 <body>
-  <img id="roid0" src="images/roid1.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid1" src="images/roid2.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid2" src="images/roid3.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid2" src="images/roid4.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid3" src="images/roid5.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid4" src="images/roid6.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid5" src="images/roid7.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid6" src="images/roid8.jpg" style="width:20px; height:20px; display:none" />
-  <img id="explosion" src="images/exploader.jpg" style="width:40px; height:40px; display:none" />
-  <img id="spaceship" src="images/spaceship.png" style="width:50px; height:40px; display:none" />
+  <img id="roid0" src="images/roid1.jpg" />
+  <img id="roid1" src="images/roid2.jpg" />
+  <img id="roid2" src="images/roid3.jpg" />
+  <img id="roid2" src="images/roid4.jpg" />
+  <img id="roid3" src="images/roid5.jpg" />
+  <img id="roid4" src="images/roid6.jpg" />
+  <img id="roid5" src="images/roid7.jpg" />
+  <img id="roid6" src="images/roid8.jpg" />
+  <img id="explosion" src="images/exploader.jpg" />
+  <img id="spaceship" src="images/spaceship.png" />
   <audio id="lazer" src="audio/lazer.m4a" preload="auto"></audio>
   <audio id="exploder" src="audio/explosion.mp3" preload="auto"></audio>
   <audio id="soundtrack" src="audio/soundtrack.mp3" preload="auto" loop="true"></audio>
@@ -44,6 +61,7 @@
     import Clock from "./modules/Clock.js"
     import Photon from "./modules/Photon.js"
     import Spaceship from "./modules/Spaceship.js"
+    import SpaceRock from "./modules/SpaceRock.js"
 
     const DEFAULT_ROCK_COUNT = 25
     var canvas, spaceship
@@ -59,36 +77,6 @@
     }
     const gameClock = new Clock()
     const soundTrack = new Sound('soundtrack')
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!--------------------------------------------  Asteroid Class  -->
-
-    function Asteroid(num) {
-      this.image = document.getElementById('roid' + num)
-      this.origin = { x: -10, y: -10 }
-      this.size = { width: 20, height: 20 }
-      this.x = Math.random() * canvas.width
-      this.y = Math.random() * canvas.height
-      this.heading = Math.random() * 360
-      this.tilt = 0
-      this.speed = Math.random() * 60
-      this.rpm = Math.random() * 60 - 30
-      this.wrap = true
-      this.drift = Motion.drift(this)
-      this.rotate = Motion.rotate(this)
-      this.isHitBy = (x,y) => {
-        var xDistance = Math.abs(x - this.x)
-        var yDistance = Math.abs(y - this.y)
-        return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3))
-      }
-      this.paint = ctx => {
-        this.drift()
-        this.rotate()
-        ctx.translate(this.x, this.y)
-        ctx.rotate(this.tilt * Math.PI / 180)
-        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height)
-      }
-    }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------------  User Input  -->
@@ -286,7 +274,7 @@
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!---------------------------------  gameSetup & State Transitions  -->
+// <!-----------------------------  gameSetup & State Transitions  -->
 
     const gameSetup = () => {
       spaceship = new Spaceship(canvas.width/2, canvas.height/2, 0) /* centered */
@@ -296,7 +284,12 @@
       gameClock.restart()
 
       Array.from({length: rockCount()}, (_, index) => {
-        rocks[index] = new Asteroid(Math.floor(Math.random() * 7))
+        const x = Math.random() * canvas.width
+        const y = Math.random() * canvas.height
+        const heading = Math.random() * 360
+        const speed = Math.random() * 60
+        const rpm = Math.random() * 60 - 30
+        rocks[index] = new SpaceRock(x, y, heading, speed, rpm)
       })
     }
 
@@ -328,7 +321,7 @@
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------  Event Listeners  -->
+// <!-------------------------------------------  Event Listeners  -->
 
     window.addEventListener('load', init, true);
     window.addEventListener('keydown', perform, true);
