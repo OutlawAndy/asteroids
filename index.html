@@ -1,255 +1,106 @@
+<!--
+  /**
+  * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining
+  * a copy of this software and associated documentation files (the
+  * "Software"), to deal in the Software without restriction, including
+  * without limitation the rights to use, copy, modify, merge, publish,
+  * distribute, sublicense, and/or sell copies of the Software, and to
+  * permit persons to whom the Software is furnished to do so
+  **/
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale = 1, user-scalable = no" media="screen" />
+  <meta name="viewport" content="width=device-width, initial-scale = 1" media="screen" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>astroids</title>
-  <style>body{margin:0 !important;}</style>
+  <style>
+    body {
+      margin:0 !important;
+    }
+    img {
+      width: 20px;
+      height: 20px;
+      display: none;
+    }
+    img#explosion {
+      width: 40px;
+      height: 40px;
+    }
+    img#spaceship {
+      width: 50px;
+      height: 40px;
+    }
+  </style>
 </head>
 <body>
-  <img id="roid0" src="images/roid1.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid1" src="images/roid2.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid2" src="images/roid3.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid2" src="images/roid4.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid3" src="images/roid5.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid4" src="images/roid6.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid5" src="images/roid7.jpg" style="width:20px; height:20px; display:none" />
-  <img id="roid6" src="images/roid8.jpg" style="width:20px; height:20px; display:none" />
-  <img id="explosion" src="images/exploader.jpg" style="width:40px; height:40px; display:none" />
-  <img id="spaceship" src="images/spaceship.png" style="width:50px; height:40px; display:none" />
+  <img id="roid0" src="images/roid1.jpg" />
+  <img id="roid1" src="images/roid2.jpg" />
+  <img id="roid2" src="images/roid3.jpg" />
+  <img id="roid2" src="images/roid4.jpg" />
+  <img id="roid3" src="images/roid5.jpg" />
+  <img id="roid4" src="images/roid6.jpg" />
+  <img id="roid5" src="images/roid7.jpg" />
+  <img id="roid6" src="images/roid8.jpg" />
+  <img id="explosion" src="images/exploader.jpg" />
+  <img id="spaceship" src="images/spaceship.png" />
   <audio id="lazer" src="audio/lazer.m4a" preload="auto"></audio>
   <audio id="exploder" src="audio/explosion.mp3" preload="auto"></audio>
   <audio id="soundtrack" src="audio/soundtrack.mp3" preload="auto" loop="true"></audio>
-  <canvas id="game">
-    Sorry, This game requires a modern browser, like <a href="http://www.google.com/chrome">Chrome</a> &trade;
-  </canvas>
-  <script>
-// requestAnimationFrame Polyfill
-    window.requestAnimFrame = (function(){
-      return  window.requestAnimationFrame ||
-              window.webkitRequestAnimationFrame ||
-              window.mozRequestAnimationFrame ||
-              window.oRequestAnimationFrame ||
-              window.msRequestAnimationFrame ||
-              function( callback, element){
-                window.setTimeout(callback, 1000 / 60);
-              };
-    })();
-  </script>
-  <script src="scripts/animatic.js"></script>
-  <script>
-    /**
-     * Copyright (c) 2014 Andy Cohen, https://github.com/OutlawAndy
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining
-     * a copy of this software and associated documentation files (the
-     * "Software"), to deal in the Software without restriction, including
-     * without limitation the rights to use, copy, modify, merge, publish,
-     * distribute, sublicense, and/or sell copies of the Software, and to
-     * permit persons to whom the Software is furnished to do so
-    **/
+
+  <canvas id="game"></canvas>
+
+  <script type="module">
+    import Clock from "./modules/Clock.js"
+    import Explosion from "./modules/Explosion.js"
+    import Photon from "./modules/Photon.js"
+    import Sound from "./modules/Sound.js"
+    import Spaceship from "./modules/Spaceship.js"
+    import SpaceRock from "./modules/SpaceRock.js"
+    import { fillTextLine, fillTextTable, setFontProps, rockCount, randomRockParams } from "./modules/utils.js"
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------------  Global Namespace  -->
+// <!----------------------------------------------  Global State  -->
 
-    var   canvas, spaceship, soundTrack, __MODE__ = 'ready';
-    const sounds = [], rocks = [], photons = [], explosions = [], stats = {
-      start: null,
-      time: null,
+    const DEFAULT_ROCK_COUNT = 25
+    const sounds = [], rocks = [], photons = [], explosions = []
+    const stats = {
       shots: 0,
       kills: 0,
       reset: function() {
-        this.start = Date.now();
-        this.time = null;
-        this.shots = 0;
-        this.kills = 0;
+        this.shots = 0
+        this.kills = 0
       }
     }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!---------------------------------------  Sound Effects Class  -->
-
-    function Sound(fx) {
-      this.media = document.getElementById(fx);
-      this.play = function() {
-        this.media.play();
-      }
-      this.stop = function() {
-        this.media.pause();
-        this.media.currentTime = 0;
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!-------------------------------------------  Explosion Class  -->
-
-    function Explosion(x,y,heading) {
-      this.image = document.getElementById('explosion');
-      this.size = { width: 0, height: 0 };
-      this.origin = { x: -(this.size.width/2), y: -(this.size.height/2) };
-      this.heading = heading;
-      this.x = x;
-      this.y = y;
-      this.gone = false;
-      this.paint = function(ctx) {
-        this.size.width += 10;
-        this.size.height += 10;
-        if (this.size.width == 60) {
-          this.gone = true;
-        } else {
-          ctx.globalAlpha = (100 / (this.size.width/2) * 0.1)
-          ctx.translate(this.x, this.y);
-          ctx.rotate((this.heading * Math.PI / 180) - 90);
-          ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
-        }
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!----------------------------------------------  Photon Class  -->
-
-    function Photon(x,y,heading) {
-      this.x = x;
-      this.y = y;
-      this.heading = heading;
-      this.speed = 1000;
-      this.gone = false;
-      drift(this, this.heading, this.speed, false);
-      this.paint = function(ctx) {
-        this.gone = ((this.x < 0) || (this.x > canvas.width) || (this.y < 0) || (this.y > canvas.height));
-        if (this.gone) { stopAnimation(this); return; }
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.heading * Math.PI / 180);
-        ctx.strokeStyle = "rgb(221, 255, 0)";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        for (var i = 0; i < 5; i++) {
-          ctx.moveTo(0, i * 2.0);
-          ctx.lineTo(0, 1 + i * 2.0);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        for (var i = 0; i <rocks.length; i++) {
-          if (rocks[i].isHitBy(this.x,this.y)) {
-            stats.kills++;
-            this.gone = true;
-            rocks[i].gone = true;
-            explosions.push(new Explosion(rocks[i].x, rocks[i].y, this.heading));
-            sounds.push(new Sound('exploder'));
-          }
-        }
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!--------------------------------------------  Asteroid Class  -->
-
-    function Asteroid(num) {
-      this.image = document.getElementById('roid' + num);
-      this.origin = { x: -10, y: -10 };
-      this.size = { width: 20, height: 20 };
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.heading = Math.random() * 360;
-      this.tilt = 0;
-      this.speed = Math.random() * 60;
-      drift(this, this.heading, this.speed);
-      rotate(this, "tilt", Math.random() * 60 - 30);
-      this.isHitBy = function(x,y) {
-        var xDistance = (x - this.x);
-        var yDistance = (y - this.y);
-        if(xDistance < 0) xDistance = -xDistance;
-        if(yDistance < 0) yDistance = -yDistance;
-        return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3));
-      }
-      this.paint = function(ctx) {
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.tilt * Math.PI / 180);
-        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!-------------------------------------------  Spaceship Class  -->
-
-    function Spaceship() {
-      this.image = document.getElementById('spaceship');
-      this.size = { width: 50, height: 40 };
-      this.origin = { x: -25, y: -20 }; // x: width/2, y: height/2
-      this.speed = 0;
-      this.heading = 0;
-      this.x = canvas.width/2;
-      this.y = canvas.height/2;
-
-      this.drift = function() {
-        drift(this, this.heading, this.speed);
-      }
-      this.veerLeft = function() {
-        this.heading -= 10;
-        this.drift();
-      }
-      this.veerRight = function () {
-        this.heading += 10;
-        this.drift();
-      }
-      this.accelerate = function() {
-        this.speed += 60;
-        if (this.speed > 500) this.speed = 500;
-        this.drift();
-      }
-      this.decelerate = function() {
-        this.speed -= 60;
-        if (this.speed < 0) this.speed = 0;
-        this.drift();
-      }
-      this.shoot = function() {
-        photons.push(new Photon(this.x, this.y, this.heading));
-        sounds.push(new Sound('lazer'));
-        stats.shots++;
-      }
-      this.paint = function(ctx) {
-        ctx.translate(this.x, this.y);
-        ctx.rotate((this.heading) * Math.PI / 180);
-        ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height);
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------------------  game clock  -->
-
-    function paintClock(ctx) {
-      ctx.fillStyle = "green";
-      ctx.font = "italic 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("elapsed: " + stats.time, 10, 20);
-    }
-
-    function calculateTime() {
-      var milliseconds = new Date() - stats.start;
-      var minutes = Math.floor(milliseconds * 0.001 / 60);
-      var seconds = Math.floor(milliseconds * 0.001 % 60);
-      stats.time = minutes + "min, " + seconds + "sec";
-    }
+    const canvas = document.getElementById('game')
+    const gameClock = new Clock()
+    const soundTrack = new Sound('soundtrack')
+    var GAME_MODE = 'ready'
+    var spaceship
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!------------------------------------------------  User Input  -->
 
-    function perform(event) {
+    const perform = event => {
       event.preventDefault()
       const {key, target} = event
-      // keyboard or on-screen button, like: <div data-action="shoot">Fire!</div>
-      const action = key ? keyMap[__MODE__][key] : target.dataset.action
+      /* keyboard or on-screen button, like: <div data-action="shoot">Fire!</div> */
+      const action = key ? keyMap[GAME_MODE][key] : target.dataset.action
 
       switch (action) {
-        case 'start': newGame();              break;
-        case 'quit' : endGame();              break;
-        case 'shoot': spaceship.shoot();      break;
-        case 'right': spaceship.veerRight();  break;
-        case 'left' : spaceship.veerLeft();   break;
-        case 'accel': spaceship.accelerate(); break;
-        case 'decel': spaceship.decelerate(); break;
-        case 'help' :/*add modal help page*/; break;
+        case 'start': newGame();              break
+        case 'quit' : endGame();              break
+        case 'shoot': spaceship.shoot();      break
+        case 'right': spaceship.veerRight();  break
+        case 'left' : spaceship.veerLeft();   break
+        case 'accel': spaceship.accelerate(); break
+        case 'decel': spaceship.decelerate(); break
+        case 'music': soundTrack.toggle();    break
+        case 'help' :/*add modal help page*/; break
       }
     }
 
@@ -274,183 +125,145 @@
         'ArrowRight'  : 'right',
         'l'           : 'right',
         'q'           : 'quit',
+        'm'           : 'music',
         '/'           : 'help',
       },
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!-------------------------------------------------  Utilities  -->
+// <!----------------------------------------  Run Loop Functions  -->
 
-    function rocksQuery(defaultCount) {
-      const params = new URLSearchParams(window.location.search)
-      if (params.has('rocks')) {
-        return parseInt(params.get('rocks'));
-      } else {
-        return defaultCount;
-      }
+    const titleScreen = ctx => {
+      ctx.restore()
+      fillTextLine(ctx, 'Press Enter To Play', 'italic', 48, 'rgba(200,200,200,0.3)')
+      setFontProps(ctx, { size: 16, color: 'rgba(200,200,200,0.3)' })
+      fillTextTable(ctx, ['Shoot:', 'Go:', 'Turn:'], ['SpaceBar', 'Up / Down', 'Left / Right'])
     }
 
-    function removeDead(deadObjects) {
-      for (var i = deadObjects.length - 1; i >= 0; i--) {
-        if (deadObjects[i].gone) deadObjects.splice(i, 1);
-      }
+    const game = ctx => {
+      if (rocks.length === 0) endGame()
+      spaceship.paint(ctx)
+      ctx.restore()
+
+      paintClock(ctx)
+      detectHits()
+      playSounds()
+      paintAll(ctx, rocks)
+      paintAll(ctx, photons)
+      paintAll(ctx, explosions)
     }
 
-    function paintAll(ctx,objectArrays) {
-      for (var i=0; i < objectArrays.length; i++) {
-        ctx.save();
-        objectArrays[i].paint(ctx);
-        ctx.restore();
-      }
-    }
-
-    function playSounds() {
-      for (var i = sounds.length - 1; i >= 0; i--) {
-        sounds[i].play();
-        sounds.splice(i, 1);
-      }
-    }
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------------------  Game State  -->
-
-    function game(ctx) {
-      const pieces = [rocks, photons, explosions];
-      spaceship.paint(ctx);
-      ctx.restore();
-      calculateTime();
-      paintClock(ctx);
-      ctx.restore();
-      playSounds();
-      for (var i = 0; i < pieces.length; i++) {
-        paintAll(ctx,pieces[i]);
-        removeDead(pieces[i]);
-      }
-      if (rocks.length === 0) endGame();
-    }
-
-    function postGame(ctx) {
-      let startX,endX,font;
-      if (canvas.width > 1080) {
-        font = "bold 72pt Arial";
-        startX = 2*(canvas.width/5);
-        endX = 3*(canvas.width/5);
-      } else {
-        font = "bold 52pt Arial";
-        startX = 2*(canvas.width/6);
-        endX = 4*(canvas.width/6);
-      }
-      ctx.restore();
-      ctx.fillStyle = "white";
-      ctx.textAlign = "center"
-      ctx.font = font;
-      ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-      ctx.font = "normal 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("Time: ",        startX, canvas.height/2 + 30);
-      ctx.fillText("Shots Fired: ", startX, canvas.height/2 + 60);
-      ctx.fillText("Space Rocks: ", startX, canvas.height/2 + 90);
-      ctx.textAlign = "right";
-      ctx.fillText( stats.time, endX, canvas.height/2 + 30);
-      ctx.fillText( stats.shots,     endX, canvas.height/2 + 60);
-      ctx.fillText( stats.kills,     endX, canvas.height/2 + 90);
-      ctx.textAlign = "center"
-      ctx.font = "italic 24pt Arial";
-      ctx.fillStyle = "rgba(200,200,200,0.2)";
-      ctx.fillText( "Press Enter To Play Again", canvas.width/2, canvas.height/2 + 140);
-    }
-
-    function preGame(ctx) {
-      var startX,endX,font;
-      if (canvas.width > 1080) {
-        font = "italic 48pt Arial";
-        startX = 2*(canvas.width/5);
-        endX = 3*(canvas.width/5);
-      } else {
-        font = "italic 36pt Arial";
-        startX = 2*(canvas.width/6);
-        endX = 4*(canvas.width/6);
-      }
-      ctx.textAlign = "center";
-      ctx.font = font;
-      ctx.fillStyle = "rgba(200,200,200,0.2)";
-      ctx.fillText( "Press Enter To Play", canvas.width/2, canvas.height/2);
-      ctx.font = "normal 16pt Arial";
-      ctx.textAlign = "left";
-      ctx.fillText("Shoot: ",     startX, canvas.height/2 + 30 );
-      ctx.fillText("Go: ",        startX, canvas.height/2 + 60);
-      ctx.fillText("Turn: ",      startX, canvas.height/2 + 90);
-      ctx.textAlign = "right";
-      ctx.fillText( "SpaceBar",   endX, canvas.height/2 + 30 );
-      ctx.fillText( "Up/Down",    endX, canvas.height/2 + 60);
-      ctx.fillText( "Left/Right", endX, canvas.height/2 + 90);
+    const statsScreen = ctx => {
+      ctx.restore()
+      fillTextLine(ctx, 'GAME OVER', 'bold', 72, 'white', -10)
+      setFontProps(ctx, { size: 16, color: 'white' })
+      fillTextTable(ctx, ['Time:', 'Shots Fired:', 'Space Rocks:'], [gameClock.read(), stats.shots, stats.kills])
+      fillTextLine(ctx, 'Press Enter To Play Again', 'italic', 24, 'rgba(200,200,200,0.3)', 140)
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!--------------------------------------------------  Run Loop  -->
+// <!----------------------------------------  Run Loop Utilities  -->
 
-    function main() {
-      requestAnimFrame(main);
-      refresh();
-      _animatic_updateAll();
+    const paintAll = (ctx, actors) => {
+      actors.forEach((actor, index) => {
+        ctx.save()
+        actor.paint(ctx)
+        ctx.restore()
+        if (actor.gone) actors.splice(index, 1)
+      })
     }
 
-    function refresh() {
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = "rgb(0,0,0)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      play[__MODE__](ctx)
+    const paintClock = ctx => {
+      setFontProps(ctx, { size: 16, color: 'green', style: 'italic', align: 'left' })
+      ctx.fillText(`elapsed: ${gameClock.read()}`, 10, 20)
+      ctx.restore()
     }
 
+    const paintSpace = ctx => {
+      ctx.fillStyle = 'black'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.save()
+    }
+
+    const playSounds = () => {
+      if (sounds.length === 0) return
+
+      sounds.forEach((sound, index) => {
+        sound.play()
+        sounds.splice(index, 1)
+      })
+    }
+
+    const detectHits = () => {
+      photons.forEach(photon => {
+        rocks.forEach(rock => {
+          if (rock.isHitBy(photon.x, photon.y)) {
+            stats.kills++
+            photon.gone = true
+            rock.gone = true
+            explosions.push(new Explosion(rock.x, rock.y, photon.heading))
+            sounds.push(new Sound('exploder'))
+          }
+        })
+      })
+    }
+
+    const handleFire = event => {
+      const {x, y, heading} = event.detail
+      photons.push(new Photon(x, y, heading))
+      sounds.push(new Sound('lazer'))
+      stats.shots++
+    }
+
+// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
+// <!-----------------------------------  gameSetup & Transitions  -->
+
+    const newGame = () => {
+      GAME_MODE = 'gameOn'
+      spaceship = new Spaceship(canvas.width/2, canvas.height/2, 0)
+
+      sounds.push(soundTrack)
+      stats.reset()
+      gameClock.restart()
+
+      Array.from({length: rockCount(DEFAULT_ROCK_COUNT)}, (_, index) => {
+        rocks[index] = new SpaceRock(...randomRockParams())
+      })
+    }
+
+    const endGame = () => {
+      GAME_MODE = 'gameOver'
+      soundTrack.stop()
+      gameClock.stop()
+    }
+
+    const main = ctx => {
+      requestAnimationFrame(() => main(ctx))
+      paintSpace(ctx)
+      play[GAME_MODE](ctx)
+    }
+
+    /* Map Game Modes to Run Loop Functions */
     const play = {
-      'ready'   : preGame,
+      'ready'   : titleScreen,
       'gameOn'  : game,
-      'gameOver': postGame
+      'gameOver': statsScreen,
+    }
+
+    const init = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+
+      requestAnimationFrame(() => main(canvas.getContext('2d')))
     }
 
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!---------------------------------  gameSetup & State Transitions  -->
-
-    function gameSetup() {
-      soundTrack = new Sound('soundtrack');
-      spaceship = new Spaceship();
-
-      stats.reset();
-      sounds.push(soundTrack);
-
-      for (var i=0; i < rocksQuery(25); i++) {
-        rocks[i] = new Asteroid(Math.floor(Math.random() * 7));
-      }
-    }
-
-    function endGame() {
-      __MODE__ = 'gameOver';
-      soundTrack.stop();
-    }
-
-    function newGame() {
-      __MODE__ = 'gameOn';
-      gameSetup();
-    }
-
-    function init() {
-      canvas = document.getElementById("game");
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      gameSetup();
-      main();
-    }
-
-
-// <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
-// <!------------------------------------  Global Event Listeners  -->
+// <!-------------------------------------------  Event Listeners  -->
 
     window.addEventListener('load', init, true);
     window.addEventListener('keydown', perform, true);
     window.addEventListener('click', perform, true);
-
+    window.addEventListener('Spaceship:fire!', handleFire, true);
   </script>
 </body>
 </html>
