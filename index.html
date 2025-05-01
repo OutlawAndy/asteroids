@@ -55,11 +55,10 @@
   <canvas id="game"></canvas>
 
   <script type="module">
-    import * as Motion from "./modules/motion.js"
-    import Sound from "./modules/Sound.js"
-    import Explosion from "./modules/Explosion.js"
     import Clock from "./modules/Clock.js"
+    import Explosion from "./modules/Explosion.js"
     import Photon from "./modules/Photon.js"
+    import Sound from "./modules/Sound.js"
     import Spaceship from "./modules/Spaceship.js"
     import SpaceRock from "./modules/SpaceRock.js"
 
@@ -138,6 +137,16 @@
       }
     }
 
+    const randomRockParams = () => {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      const heading = Math.random() * 360
+      const speed = Math.random() * 60
+      const rpm = Math.random() * 60 - 30
+
+      return [x, y, heading, speed, rpm]
+    }
+
     const playSounds = () => {
       if (sounds.length === 0) return
 
@@ -185,7 +194,7 @@
 // <!-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -->
 // <!---------------------------------------------  Title Screens  -->
 
-    const postGame = ctx => {
+    const statsScreen = ctx => {
       let startX, endX, font
       if (canvas.width > 1080) {
         font = "bold 72pt Arial";
@@ -216,7 +225,7 @@
       ctx.fillText( "Press Enter To Play Again", canvas.width/2, canvas.height/2 + 140);
     }
 
-    const preGame = ctx => {
+    const titleScreen = ctx => {
       let startX, endX, font
       if (canvas.width > 1080) {
         font = "italic 48pt Arial";
@@ -284,12 +293,7 @@
       gameClock.restart()
 
       Array.from({length: rockCount()}, (_, index) => {
-        const x = Math.random() * canvas.width
-        const y = Math.random() * canvas.height
-        const heading = Math.random() * 360
-        const speed = Math.random() * 60
-        const rpm = Math.random() * 60 - 30
-        rocks[index] = new SpaceRock(x, y, heading, speed, rpm)
+        rocks[index] = new SpaceRock(...randomRockParams())
       })
     }
 
@@ -306,9 +310,9 @@
 
     // Game Modes / Action Functions
     const play = {
-      'ready'   : preGame,
+      'ready'   : titleScreen,
       'gameOn'  : game,
-      'gameOver': postGame
+      'gameOver': statsScreen,
     }
 
     const init = () => {
@@ -316,7 +320,6 @@
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
 
-      gameSetup()
       requestAnimationFrame(() => main(canvas.getContext('2d')))
     }
 
