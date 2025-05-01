@@ -1,21 +1,13 @@
-import { drift } from "./animation.js"
+import Actor from "./actor.js"
 
-export default class Photon {
+export default class Photon extends Actor {
   constructor(x, y, heading) {
-    this.x = x
-    this.y = y
-    this.heading = heading
+    super(x, y, heading)
     this.speed = 1000
-    this.gone = false
-    this.wrap = false
-    this.drift = drift(this)
   }
 
   paint(ctx) {
-    this.drift()
-
-    ctx.translate(this.x, this.y)
-    ctx.rotate(this.heading * Math.PI / 180)
+    super.paint(ctx)
     ctx.strokeStyle = "rgb(221, 255, 0)"
     ctx.lineWidth = 3
     ctx.beginPath()
@@ -25,15 +17,5 @@ export default class Photon {
     }
     ctx.closePath()
     ctx.stroke()
-    // TODO: move this out of Photon and handle in the main loop.
-    for (var i = 0; i < rocks.length; i++) {
-      if (rocks[i].isHitBy(this.x, this.y)) {
-        stats.kills++
-        this.gone = true
-        rocks[i].gone = true
-        explosions.push(new Explosion(rocks[i].x, rocks[i].y, this.heading))
-        sounds.push(new Sound('exploder'))
-      }
-    }
   }
 }
