@@ -1,12 +1,13 @@
 import Actor from './actor.js';
 
 export default class Spaceship extends Actor {
+  size = { width: 50, height: 40 }
+  origin = { x: -25, y: -20 }
+  wrap = true
+
   constructor(startX, startY, heading) {
     super(startX, startY, heading)
     this.image = document.getElementById('spaceship');
-    this.size = { width: 50, height: 40 };
-    this.origin = { x: -25, y: -20 }; // x: width/2, y: height/2
-    this.wrap = true
   }
 
   veerLeft() {

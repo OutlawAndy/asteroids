@@ -1,10 +1,11 @@
 import Actor from "./actor.js"
 
 export default class Explosion extends Actor {
+  size = { width: 0, height: 0 }
+
   constructor(startX, startY, heading) {
     super(startX, startY, heading)
     this.image = document.getElementById('explosion')
-    this.size = { width: 0, height: 0 }
   }
 
   expand() {

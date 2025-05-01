@@ -1,9 +1,10 @@
 import Actor from "./actor.js"
 
 export default class Photon extends Actor {
+  speed = 1000
+
   constructor(x, y, heading) {
     super(x, y, heading)
-    this.speed = 1000
   }
 
   paint(ctx) {
