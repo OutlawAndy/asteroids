@@ -3,15 +3,10 @@ import Actor from './actor.js'
 export default class SpaceRock extends Actor {
   size = { width: 20, height: 20 }
   origin = { x: -10, y: -10 }
-  tilt = 0
-  isRotating = true
-  axisProp = 'tilt'
   wrap = true
 
   constructor(startX, startY, heading, speed, rpm) {
-    super(startX, startY, heading)
-    this.speed = speed
-    this.rpm = rpm
+    super(startX, startY, heading, speed, rpm)
 
     const imageNumber = Math.floor(Math.random() * 7)
     this.image = document.getElementById('roid' + imageNumber)

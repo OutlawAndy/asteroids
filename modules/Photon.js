@@ -3,10 +3,6 @@ import Actor from "./actor.js"
 export default class Photon extends Actor {
   speed = 1000
 
-  constructor(x, y, heading) {
-    super(x, y, heading)
-  }
-
   paint(ctx) {
     super.paint(ctx)
     ctx.strokeStyle = "rgb(221, 255, 0)"

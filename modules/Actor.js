@@ -1,29 +1,26 @@
 import { drift, rotate } from "./motion.js"
 
 export default class Actor {
-  x          = 0
-  y          = 0
-  heading    = 0
-  speed      = 0
-  gone       = false
-  wrap       = false
-  axisProp   = 'heading'
-  isDrifting = true
-  isRotating = false
+  tilt = 0
+  gone = false
+  wrap = false
 
-  constructor(x, y, heading) {
+  constructor(x, y, heading = 0, speed = 0, rpm = 0) {
     this.x = x
     this.y = y
     this.heading = heading
-    this.drift = drift(this)
-    this.rotate = rotate(this)
+    this.speed = speed
+    this.rpm = rpm
+    this.updatePosition = drift(this)
+    this.updateOrientation = rotate(this)
   }
 
   paint(ctx) {
-    if (this.isDrifting) this.drift()
-    if (this.isRotating) this.rotate()
+    this.updatePosition()
+    this.updateOrientation()
 
     ctx.translate(this.x, this.y)
-    ctx.rotate(this[this.axisProp] * Math.PI / 180)
+    ctx.rotate(this.tilt * Math.PI / 180)
+    ctx.rotate(this.heading * Math.PI / 180)
   }
 }
