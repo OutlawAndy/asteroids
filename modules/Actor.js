@@ -26,7 +26,7 @@ export default class Actor {
     if (this.image) ctx.drawImage(this.image, this.origin.x, this.origin.y, this.size.width, this.size.height)
   }
 
-  isHitBy = (x, y) => {
+  isHitBy(x, y) {
     const xDistance = Math.abs(x - this.x)
     const yDistance = Math.abs(y - this.y)
     return ((xDistance < this.size.width + 3) && (yDistance < this.size.height + 3))
